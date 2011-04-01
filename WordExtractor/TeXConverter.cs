@@ -17,6 +17,8 @@ namespace WordExtractor
         public string PreambleKey { get; set; }
         public const string DefaultDocumentKey = "document.tex";
         public string DocumentKey { get; set; }
+        public const string DefaultBibliographyKey = "bibliography.bib";
+        public string BibliographyKey { get; set; }
 
         public DirectoryInfo Destination { get; set; }
 
@@ -35,6 +37,7 @@ namespace WordExtractor
 
             PreambleKey = DefaultPreambleKey;
             DocumentKey = DefaultDocumentKey;
+            BibliographyKey = DefaultBibliographyKey;
 
             Destination = null;
 
@@ -83,9 +86,10 @@ namespace WordExtractor
         {
             if (errors == null) errors = new StringWriter();
 
-            TextWriter preamble = null, document = null;
+            TextWriter preamble = null, document = null, bibliography = null;
             if (!OutputFiles.TryGetValue(PreambleKey, out preamble)) OutputFiles[PreambleKey] = preamble = new StringWriter();
             if (!OutputFiles.TryGetValue(DocumentKey, out document)) OutputFiles[DocumentKey] = document = new StringWriter();
+            if (!OutputFiles.TryGetValue(BibliographyKey, out bibliography)) OutputFiles[BibliographyKey] = bibliography = new StringWriter();
 
             preamble.Write(Properties.Resources.LaTeXPreamble);
             document.WriteLine("\\input{" + PreambleKey + "}");
