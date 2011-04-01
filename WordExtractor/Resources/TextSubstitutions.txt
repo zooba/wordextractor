@@ -1,0 +1,21 @@
+﻿\	\textbackslash		# Replaced with \textbackslash{} below
+`	\textgrave			# Replaced with \`{} below
+‘	`
+’	'
+“	``
+”	''
+$	\$
+#	\#
+%	\%
+{	\{
+}	\}
+_	\_
+©	\textcopyright{}
+®	\textregistered{}
+™	\texttrademark{}
+\textbackslash	\textbackslash{}
+\textgrave	\`{}
+–	--					# En-dash
+—	---					# Em-dash
+0x200B	{}				# Zero-width space
+0x00A0	~				# Non-breaking space

@@ -1,0 +1,139 @@
+%------------------------------------------------------------------------------
+
+\documentclass[pdftex,a4paper,11pt]{article}
+\pdfminorversion=5
+\usepackage[lmargin=2cm,rmargin=2cm,tmargin=3cm,bmargin=2cm]{geometry}
+
+%------------------------------------------------------------------------------
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\setlength{\headheight}{14pt}
+%\fancyhead[L]{report number}
+
+%------------------------------------------------------------------------------
+
+\usepackage{cmap}
+\usepackage{type1ec}
+\usepackage[T1]{fontenc}
+
+\usepackage{cite}
+\usepackage{setspace}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{dcolumn}
+
+%------------------------------------------------------------------------------
+
+\usepackage{enumitem}
+\setlist{noitemsep,topsep=0pt}
+\setitemize{noitemsep,topsep=0pt}
+\setenumerate{noitemsep,topsep=0pt}
+
+%------------------------------------------------------------------------------
+
+\usepackage{float}
+\usepackage[labelsep=colon]{caption}
+
+%------------------------------------------------------------------------------
+
+\makeatletter
+\newcommand{\floatc@simplerule}[2]{\center{\@fs@cfont #1} #2\par}
+\newcommand{\fs@simplerule}{\def\@fs@cfont{}\let\@fs@capt\floatc@simplerule%
+  \def\@fs@pre{\kern4pt}%
+  \def\@fs@post{\kern4pt \hrule height.5pt depth0pt \kern4pt \relax}%
+  \def\@fs@mid{\hrule height.5pt depth0pt \vspace{2.0pt} \hrule height.5pt depth0pt \kern4pt}%
+  \let\@fs@iftopcapt\iftrue%
+}
+\makeatother
+
+\floatstyle{simplerule}
+\newfloat{excerpt}{thp}{lop}
+\floatname{excerpt}{Excerpt}
+
+\floatstyle{boxed}
+\newfloat{listing}{thp}{lop}
+\floatname{listing}{Listing}
+
+\makeatletter
+\newcommand\textsubscript[1]{\@textsubscript{\selectfont#1}}
+\def\@textsubscript#1{{\m@th\ensuremath{_{\mbox{\fontsize\sf@size\z@#1}}}}}
+\makeatother
+
+%------------------------------------------------------------------------------
+
+%\usepackage{thumbpdf}
+\usepackage[
+    colorlinks=true,
+    urlcolor=rltblue,               % \href{...}{...}
+    anchorcolor=rltbrightblue,
+    filecolor=rltgreen,             % \href*{...}
+    linkcolor=rltred,               % \ref{...} and \pageref{...}
+    menucolor=webblue,
+    citecolor=webgreen,
+    pdftitle={},
+    pdfauthor={},
+    pdfsubject={},
+    pdfkeywords={},
+    %pdfadjustspacing=1,
+    pagebackref, % bibliography backpage refernces
+    pdfpagemode=UseOutlines,
+    hyperfootnotes=true, % lots of complaints 
+    plainpages=false,
+    %pdfpagelabels, 
+    bookmarksopen=false]{hyperref} % start with bookmarks closed
+\pdfcompresslevel=9
+
+
+\definecolor{rltbrightred}{rgb}{1,0,0}
+\definecolor{rltred}{rgb}{0.75,0,0}
+\definecolor{rltdarkred}{rgb}{0.5,0,0}
+
+\definecolor{rltbrightgreen}{rgb}{0,0.75,0}
+\definecolor{rltgreen}{rgb}{0,0.5,0}
+\definecolor{rltdarkgreen}{rgb}{0,0,0.25}
+
+\definecolor{rltbrightblue}{rgb}{0,0,1}
+\definecolor{rltblue}{rgb}{0,0,0.75}
+\definecolor{rltdarkblue}{rgb}{0,0,0.5}
+
+\definecolor{webred}{rgb}{0.5,.25,0}
+\definecolor{webblue}{rgb}{0,0,0.75}
+\definecolor{webgreen}{rgb}{0,0.5,0}
+
+%-----------------------------------------------------------------------
+
+\usepackage{cleveref}
+\newcommand\crefrangeconjunction{--}
+
+\crefname{chapter}{Chapter}{chapters}
+\crefname{section}{Section}{sections}
+\crefname{subsection}{Section}{sections}
+\crefname{subsubsection}{Section}{sections}
+\crefname{appendix}{Appendix}{appendices}
+
+%-----------------------------------------------------------------------
+
+%\input{other file}
+
+\bibliographystyle{IEEEtran}
+
+%-----------------------------------------------------------------------
+
+\newcommand\wxbeginequation[2]{\begin{equation}\label{#2}}
+\newcommand\wxendequation{\end{equation}}
+\crefformat{equation}{(#2#1#3)}
+
+\newcommand\wxnextfigurecaptionlabel{}
+\newcommand\wxbeginfigure[2]{\begin{figure}\renewcommand\wxnextfigurecaptionlabel{\caption{#1}\label{#2}}\centering}
+\newcommand\wxendfigure{\wxnextfigurecaptionlabel\end{figure}}
+\crefname{figure}{Figure}{figures}
+
+\newcommand\wxbeginlisting[2]{\begin{listing}\caption{#1}\label{#2}\centering\begin{verbatim}}
+\newcommand\wxendlisting{\end{listing}}
+\crefname{listing}{Listing}{listings}

@@ -1,0 +1,14 @@
+Processes Word 2007 (.docx) documents and produces LaTeX code.
+
+>> WordExtractor [/?] [/L#] [/nooutput] [/nolatex] [/out:<path>]
+                 [/name:<name>] [/overwrite] SourceFile
+
+  ?          Displays this usage information..
+  L:#        Only applies filters up to the specified level (0-9).
+  nooutput   Applies filters but does not produce any output.
+  nolatex    Writes the intermediate representation to stdout.
+  out:...    Stores generated LaTeX files in the specified
+             directory.
+  name:...   Specifies the filename of the main LaTeX file.
+  overwrite  Recreates all float and preamble files.
+  SourceFile Path to a .docx document to process.
