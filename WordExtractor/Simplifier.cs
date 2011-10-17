@@ -57,7 +57,10 @@ namespace WordExtractor
             ConvertFootnoteCharacters();
             ConvertFootnoteRuns();
 
+            ConvertSoftHyphens();
+
             RenameInstrTextRuns();
+            RemoveDeletedTextRuns();
 
             RemoveInvisibleText();
             RemoveBibliography();
@@ -70,6 +73,7 @@ namespace WordExtractor
             RemoveEmptyElements("noProof");
             RemoveEmptyElements("lastRenderedPageBreak");
             RemoveEmptyElements("rPr");
+            RemoveProofingErrors();
 
             CondenseTables();
 
@@ -287,10 +291,20 @@ namespace WordExtractor
             return replacements;
         }
 
+        private void ConvertSoftHyphens()
+        {
+            ReplaceSequence(DocumentTokens.First, "S<:softHyphen S>:softHyphen", "\0:\x00AD");
+        }
+
         private void RenameInstrTextRuns()
         {
             ReplaceSequence(DocumentTokens.First, "S<:instrText", "S<:t");
             ReplaceSequence(DocumentTokens.First, "S>:instrText", "S>:t");
+        }
+
+        private void RemoveDeletedTextRuns()
+        {
+            ReplaceSequence(DocumentTokens.First, "S<:p !S:<r S<:rPr !S>:rPr S<:del ! S>:p", "");
         }
 
         private void RemoveInvisibleText()
@@ -302,6 +316,11 @@ namespace WordExtractor
         private void RemoveBibliography()
         {
             ReplaceSequence(DocumentTokens.First, "S<:sdt !S>:sdt S<:sdt !S>:sdt S<:bibliography S>:bibliography ! S>:sdt ! S>:sdt", "bibliography:");
+        }
+
+        private void RemoveProofingErrors()
+        {
+            ReplaceSequence(DocumentTokens.First, "S<:proofErr ! S>:proofErr", "");
         }
 
         private void ConvertFieldCharacters()
@@ -565,9 +584,10 @@ namespace WordExtractor
             var code = "S<:r !S>:r S<:rPr !S>:rPr S<:rStyle Sa:val | S=:* S>:rStyle";
             foreach (var c in Find(code))
             {
-                c.Start.Value.Metadata = "run_style";
-                c.Start.Value.Value = c.Mark.Value.Value;
-                c.Start.Next.RemoveTo(c.End);
+                var first = c.Start.Next;
+                first.Value.Metadata = "run_style";
+                first.Value.Value = c.Mark.Value.Value;
+                first.Next.RemoveTo(c.End);
             }
             ReplaceSequence(DocumentTokens.First, "S<:rStyle ! S>:rStyle", "");
 
@@ -575,9 +595,10 @@ namespace WordExtractor
             code = "S<:pPr !S>:pPr S<:pStyle Sa:val | S=:* S>:pStyle";
             foreach (var c in Find(code))
             {
-                c.Start.Value.Metadata = "para_style";
-                c.Start.Value.Value = c.Mark.Value.Value;
-                c.Start.Next.RemoveTo(c.End);
+                var first = c.Start.Next;
+                first.Value.Metadata = "para_style";
+                first.Value.Value = c.Mark.Value.Value;
+                first.Next.RemoveTo(c.End);
             }
         }
 
@@ -709,6 +730,7 @@ namespace WordExtractor
                 "S<:rPr !S>:rPr | S<:sz ! S>:sz",
                 "S<:rPr !S>:rPr | S<:szCs ! S>:szCs",
                 "S<:pPr !S>:pPr | S<:jc ! S>:jc",
+                "S<:pPr !S>:pPr | S<:ind ! S>:ind",
                 "S<:sectPr ! S>:sectPr",
                 "S<:lang ! S>:lang",
                 "S<:proofErr ! S>:proofErr",
@@ -736,9 +758,10 @@ namespace WordExtractor
 
         private void SimplifyRuns()
         {
-            var code = "run_style:* ! S>:r";
+            var code = "S<:r | run_style:* ! S>:r";
             foreach (var c in Find(code))
             {
+                c.List.Remove(c.Start);
                 c.End.Value.Metadata = "end_run_style";
                 c.End.Value.Value = c.Mark.Value.Value;
             }

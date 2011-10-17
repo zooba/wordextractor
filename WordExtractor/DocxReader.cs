@@ -91,7 +91,13 @@ namespace WordExtractor
             {
                 RecurseFillBuffer(e, buffer);
             }
-            if (!xml.HasElements && !string.IsNullOrEmpty(xml.Value)) buffer.Add(new Token(xml.Value));
+            if (!xml.HasElements && !string.IsNullOrEmpty(xml.Value))
+            {
+                if (xml.Value == "*")
+                    buffer.Add(new Token("\\*"));
+                else
+                    buffer.Add(new Token(xml.Value));
+            }
             buffer.Add(new Token("S>", xml.Name.LocalName));
         }
 
