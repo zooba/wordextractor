@@ -23,6 +23,8 @@ namespace WordExtractor
         private LinkedList<Token> FootnoteRelsTokens;
         private LinkedList<Token> NumberingTokens;
 
+        private Dictionary<string, string> NiceReferenceNames;
+
         public IEnumerable<Token> Document { get { return DocumentTokens.AsEnumerable(); } }
 
         public Simplifier(DocxReader reader, TextWriter warnings)
@@ -33,6 +35,7 @@ namespace WordExtractor
             FootnoteTokens = new LinkedList<Token>(reader.Footnotes);
             FootnoteRelsTokens = new LinkedList<Token>(reader.FootnotesRels);
             NumberingTokens = new LinkedList<Token>(reader.Numbering);
+            NiceReferenceNames = new Dictionary<string, string>();
             UpTo = 0;
             Warnings = warnings;
         }
@@ -47,6 +50,8 @@ namespace WordExtractor
             Pass3();
             if (UpTo >= limit) return;
             Pass4();
+            if (UpTo >= limit) return;
+            Pass5();
             if (UpTo >= limit) return;
         }
 
@@ -129,11 +134,6 @@ namespace WordExtractor
 
             CombineCitations();
 
-            ConvertTables();
-            ConvertFloats();
-
-            ConvertOtherBookmarks();
-
             UpTo = 3;
         }
 
@@ -142,9 +142,24 @@ namespace WordExtractor
             if (UpTo < 3) Pass3();
             if (UpTo > 3) return;
 
-            DetectCodeListings();
+            ConvertTables();
+            ConvertCaptions();
+            ConvertFloats();
+
+            ConvertOtherBookmarks();
 
             UpTo = 4;
+        }
+
+        internal void Pass5()
+        {
+            if (UpTo < 4) Pass4();
+            if (UpTo > 4) return;
+
+            DetectCodeListings();
+            UseNiceReferenceNames();
+
+            UpTo = 5;
         }
 
         private struct FindResult
@@ -385,6 +400,12 @@ namespace WordExtractor
 
         private void ConvertImages()
         {
+            foreach (var c in Find("S<:drawing !S>:drawing S<:docPr !S>:docPr Sa:title | S=:* ! S>:drawing"))
+            {
+                c.Start.Value.Metadata = "image";
+                c.Start.Value.Value = c.Mark.Value.Value;
+                c.Start.Next.RemoveTo(c.End);
+            }
             ReplaceSequence(DocumentTokens.First, "S<:drawing ! S>:drawing", "image:\0");
         }
 
@@ -939,7 +960,7 @@ namespace WordExtractor
             }
         }
 
-        private void ConvertFloats()
+        private void ConvertCaptions()
         {
             // Named (referenced) floats
             var code = "para_style:Caption | bookmark_start:* ! seq:* bookmark_end:* ! eop:*";
@@ -981,11 +1002,96 @@ namespace WordExtractor
                 c.End.Value.Metadata = "end_caption";
                 c.List.AddAfter(c.End, new Token("label", "unreferenced" + c.End.GetHashCode().ToString("X8")));
             }
+        }
+
+        private static readonly HashSet<string> BoringWords = new HashSet<string>(new[] {
+            "the", "a", "an", "and", "in", "to", "for", "as", "of", "show", "shows", "shown"
+        });
+
+        private string NiceNameFromCaption(LinkedListNode<Token> caption, string possibility = null)
+        {
+            if (string.IsNullOrWhiteSpace(possibility))
+            {
+                var name_parts = new List<string>();
+                for (var node = caption;
+                    node != null && node.Value != null && node.Value.Metadata != "end_caption";
+                    node = node.Next)
+                {
+                    if (node.Value.Metadata != null) continue;
+                    var words = node.Value.Value.ToLower();
+                    words = Regex.Replace(words, "[^a-z0-9]", " ");
+                    foreach (var word in words.Split())
+                    {
+                        if (string.IsNullOrWhiteSpace(word) || BoringWords.Contains(word)) continue;
+                        name_parts.Add(word.Substring(0, 1).ToUpper() + word.Substring(1));
+                    }
+                }
+                possibility = string.Join("", name_parts);
+            }
+
+            if (string.IsNullOrWhiteSpace(possibility))
+                return null;
+
+            if (NiceReferenceNames.ContainsValue(possibility))
+            {
+                int alt_count = 1;
+                var alt = possibility + alt_count.ToString();
+                while (NiceReferenceNames.ContainsValue(alt))
+                {
+                    alt_count += 1;
+                    alt = possibility + alt_count.ToString();
+                }
+                possibility = alt;
+            }
+
+            return possibility;
+        }
+
+        private void ConvertFloats()
+        {
+            // Floats based on tables
+            var code = "float:* ! | label:* table:* ! end_table:*";
+            foreach (var c in Find(code))
+            {
+                var niceRef = NiceNameFromCaption(c.Start);
+                if (!string.IsNullOrWhiteSpace(niceRef))
+                    NiceReferenceNames[c.Mark.Value.Value] = niceRef;
+
+                c.List.AddAfter(c.End, new Token("end_float", c.Start.Value.Value));
+            }
+
+            // Floats based on images
+            code = "float:* ! | label:* image:* eop:*";
+            foreach (var c in Find(code))
+            {
+                var niceRef = NiceNameFromCaption(c.Start, c.Mark.Next.Value.Value);
+                if (!string.IsNullOrWhiteSpace(niceRef))
+                    NiceReferenceNames[c.Mark.Value.Value] = niceRef;
+
+                c.List.AddAfter(c.End, new Token("end_float", c.Start.Value.Value));
+            }
+
+            // Floats based on equation
+            code = "float:* ! label:* | math_para:* eop:*";
+            foreach (var c in Find(code))
+            {
+                var niceRef = NiceNameFromCaption(c.Start);
+                if (!string.IsNullOrWhiteSpace(niceRef))
+                    NiceReferenceNames[c.Mark.Previous.Value.Value] = niceRef;
+
+                c.Mark.Value.Metadata = "math_float";
+                c.End.Value.Metadata = "end_float";
+                c.End.Value.Value = c.Start.Value.Value;
+            }
 
             // Floats based on paragraph style
             code = "float:* ! label:* | para_style:*";
             for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start.Next, code))
             {
+                var niceRef = NiceNameFromCaption(c.Start);
+                if (!string.IsNullOrWhiteSpace(niceRef))
+                    NiceReferenceNames[c.Mark.Previous.Value.Value] = niceRef;
+
                 var style = c.Mark.Value;
                 var c2 = c;
                 for (c2 = FindSequence(c2.End, "eop:*"); c2.IsMatch; c2 = FindSequence(c2.End.Next, "eop:*"))
@@ -994,29 +1100,6 @@ namespace WordExtractor
                 }
                 if (c2.IsMatch) c.End = c2.End;
                 c.List.AddAfter(c.End, new Token("end_float", c.Start.Value.Value));
-            }
-
-            // Floats based on tables
-            code = "float:* ! label:* table:* ! end_table:*";
-            foreach (var c in Find(code))
-            {
-                c.List.AddAfter(c.End, new Token("end_float", c.Start.Value.Value));
-            }
-
-            // Floats based on images
-            code = "float:* ! label:* image:* | eop:*";
-            foreach (var c in Find(code))
-            {
-                c.List.AddAfter(c.End, new Token("end_float", c.Start.Value.Value));
-            }
-
-            // Floats based on equation
-            code = "float:* ! label:* | math_para:* eop:*";
-            foreach (var c in Find(code))
-            {
-                c.Mark.Value.Metadata = "math_float";
-                c.End.Value.Metadata = "end_float";
-                c.End.Value.Value = c.Start.Value.Value;
             }
         }
 
@@ -1036,6 +1119,28 @@ namespace WordExtractor
                 else if (match2 != null && match2.Success)
                 {
                     c.Start.Value.Value = c.End.Value.Value = "listing_" + match2.Groups[1].Value.ToLower();
+                }
+            }
+        }
+
+        private void UseNiceReferenceNames()
+        {
+            for (var node = DocumentTokens.First; node != null; node = node.Next)
+            {
+                if (node == null || node.Value == null ||
+                    node.Value.Metadata == null || node.Value.Value == null)
+                    continue;
+
+                if (node.Value.Metadata.Equals("ref", StringComparison.InvariantCultureIgnoreCase) ||
+                    node.Value.Metadata.Equals("label", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    string niceRef;
+                    if (NiceReferenceNames.TryGetValue(node.Value.Value.TrimStart('_'), out niceRef) ||
+                        NiceReferenceNames.TryGetValue(node.Value.Value, out niceRef) ||
+                        NiceReferenceNames.TryGetValue("_" + node.Value.Value, out niceRef))
+                    {
+                        node.Value.Value = niceRef;
+                    }
                 }
             }
         }

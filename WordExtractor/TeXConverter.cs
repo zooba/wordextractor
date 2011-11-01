@@ -271,7 +271,7 @@ namespace WordExtractor
             { "end_table_col", _ => new Token(" & ") },
             { "end_table_row", _ => new Token(" \\\\ \\hline\r\n") },
 
-            { "image", _ => new Token("\\includegraphics[width=140mm]{}") },
+            { "image", text => new Token("\\includegraphics{" + (text ?? "") + "}") },
 
             { "bibliography", _ => new Token("\\bibliography{bibliography}\r\n") }
         };
