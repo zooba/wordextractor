@@ -130,9 +130,6 @@ namespace WordExtractor
 
             ConvertFields();
             ResolveURLs();
-            CombineReferences();
-
-            CombineCitations();
 
             UpTo = 3;
         }
@@ -158,6 +155,8 @@ namespace WordExtractor
 
             DetectCodeListings();
             UseNiceReferenceNames();
+            CombineReferences();
+            CombineCitations();
 
             UpTo = 5;
         }
