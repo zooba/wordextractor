@@ -203,8 +203,15 @@ namespace WordExtractor
 
         private IEnumerable<Token> DoConvert(IEnumerable<Token> source)
         {
+            int skipEop = 0;
             foreach (var t in source)
             {
+                if (t.Metadata == "eop" && skipEop > 0)
+                {
+                    --skipEop;
+                    continue;
+                }
+
                 var result = new Token(t);
 
                 if (t.Metadata == null)
@@ -222,6 +229,12 @@ namespace WordExtractor
                 }
 
                 if (result == null) continue;
+
+                if (!string.IsNullOrEmpty(result.Value) && result.Value.EndsWith("\\wxnobreak"))
+                {
+                    skipEop += 1;
+                    result.Value = result.Value.Remove(result.Value.Length - 10);
+                }
 
                 yield return result;
             }
@@ -264,7 +277,7 @@ namespace WordExtractor
 
             { "math_float", text => new Token(text) },
             { "math", text => new Token("$" + text + "$") },
-            { "math_para", text => new Token("$$" + text + "$$") },
+            { "math_para", ConvertMathPara },
 
             { "table", text => new Token("\\begin{tabular}{" + text + "}\r\n\\hline\r\n") },
             { "end_table", _ => new Token("\\end{tabular}\r\n") },
@@ -348,6 +361,16 @@ namespace WordExtractor
             if (text.IndexOf("bullet", StringComparison.InvariantCultureIgnoreCase) >= 0) return new Token("\\end{itemize}\r\n");
             if (text.IndexOf("decimal", StringComparison.InvariantCultureIgnoreCase) >= 0) return new Token("\\end{enumerate}\r\n");
             return new Token((string)null);
+        }
+
+        private static Token ConvertMathPara(string text)
+        {
+            if (text.EndsWith("."))
+            {
+                text = text.Remove(text.Length - 1);
+                return new Token("$$" + text + "$$.");
+            }
+            return new Token("$$" + text + "$$\r\n\\noindent{}\\wxnobreak");
         }
 
         private static Token ConvertFloat(string text)
