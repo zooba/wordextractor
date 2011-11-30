@@ -26,7 +26,12 @@ namespace WordExtractor
         private List<Tuple<string, string>> TextSubstitutions;
         private List<Tuple<string, string>> MathSubstitutions;
 
-        private static readonly string[] KnownListingLanguages = new[] { "python", "esdl", "pseudocode" };
+        private static readonly Dictionary<string, string> KnownListingLanguages = new Dictionary<string, string> { 
+            { "python", "python" },
+            { "esdl", "esdl" }, 
+            { "c++", "cpp" },
+            { "pseudocode", "pseudocode" }
+        };
 
         public TeXConverter(IEnumerable<Token> source, bool asChapter) {
             Tokens = source.ToList();
@@ -179,7 +184,7 @@ namespace WordExtractor
                     InVerbatim = false;
                     target = document;
                 } else if (t.Metadata.Equals("appendix", StringComparison.InvariantCultureIgnoreCase)) {
-                    if (!inAppendices) {
+                    if (!inAppendices && !AsChapter) {
                         target.WriteLine("\\appendix");
                         inAppendices = true;
                     }
@@ -347,10 +352,10 @@ namespace WordExtractor
         private static Token ConvertFloat(string text) {
             if (text.IndexOf("listing_", StringComparison.InvariantCultureIgnoreCase) == 0) {
                 var language = text.Substring(text.IndexOf('_') + 1);
-                if (KnownListingLanguages.Contains(language)) {
-                    return new Token("float_listing", "\\wxbegin" + language + "{");
+                if (KnownListingLanguages.TryGetValue(language, out language)) {
+                    return new Token("float_listing", "\\wxbeginlisting{" + language + "}{}{");
                 } else {
-                    return new Token("float_listing", "\\wxbeginlisting{");
+                    return new Token("float_listing", "\\wxbeginlisting{lstlisting}{}{");
                 }
             } else {
                 return new Token("float_" + text, "\\wxbegin" + text + "{");
@@ -360,13 +365,13 @@ namespace WordExtractor
         private static Token ConvertEndFloat(string text) {
             if (text.IndexOf("listing_", StringComparison.InvariantCultureIgnoreCase) == 0) {
                 var language = text.Substring(text.IndexOf('_') + 1);
-                if (KnownListingLanguages.Contains(language)) {
-                    return new Token("end_float", "\\end{" + language + "}\\wxend" + language + "\r\n");
+                if (KnownListingLanguages.TryGetValue(language, out language)) {
+                    return new Token("end_float", "\\end{" + language + "}\\wxendlisting\r\n");
                 } else {
-                    return new Token("end_float", "\\end{verbatim}\\wxendlisting\r\n");
+                    return new Token("end_float", "\\end{lstlisting}\\wxendlisting\r\n");
                 }
             } else if (text.Equals("listing", StringComparison.InvariantCultureIgnoreCase)) {
-                return new Token("end_float", "\\end{verbatim}\\wxendlisting\r\n");
+                return new Token("end_float", "\\end{lstlisting}\\wxendlisting\r\n");
             } else {
                 return new Token("end_float", "\\wxend" + text + "\r\n");
             }

@@ -133,11 +133,12 @@
 \newcommand\wxendequation{\end{equation}}
 \crefformat{equation}{(#2#1#3)}
 
-\newcommand\wxnextfigurecaptionlabel{}
-\newcommand\wxbeginfigure[2]{\begin{figure}\renewcommand\wxnextfigurecaptionlabel{\caption{#1}\label{#2}}\centering}
-\newcommand\wxendfigure{\wxnextfigurecaptionlabel\end{figure}}
+\newcommand\wxendfigure{}
+\newcommand\wxbeginfigure[2]{\begin{figure}\renewcommand\wxendfigure{\caption{#1}\label{#2}\end{figure}}\centering}
+\newcommand\wxbeginfigurewide[2]{\begin{figure*}\renewcommand\wxendfigure{\caption{#1}\label{#2}\end{figure*}}\centering}
 \crefname{figure}{Figure}{figures}
 
-\newcommand\wxbeginlisting[2]{\begin{listing}\caption{#1}\label{#2}\centering\begin{verbatim}}
-\newcommand\wxendlisting{\end{listing}}
+\newcommand\wxendlisting{}
+\newcommand\wxbeginlisting[4]{\begin{figure}\renewcommand\wxendlisting{\end{minipage}\end{figure}}\centering\begin{minipage}{\columnwidth}\begin{#1}[caption={#3},label={#4},#2]}
+\newcommand\wxbeginlistingwide[4]{\begin{figure*}\renewcommand\wxendlisting{\end{minipage}\end{figure*}}\centering\begin{minipage}{0.71\pagewidth}\begin{#1}[caption={#3},label={#4},#2]}
 \crefname{listing}{Listing}{listings}

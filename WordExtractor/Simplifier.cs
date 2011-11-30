@@ -730,7 +730,7 @@ namespace WordExtractor
                     if (c.Start.Value.Value.StartsWith("heading", StringComparison.InvariantCultureIgnoreCase)) {
                         if (c.Mark.Value.Value.StartsWith("appendix", StringComparison.CurrentCultureIgnoreCase)) {
                             c.Start.Value.Value = "Appendix";
-                            var match = Regex.Match(c.Mark.Value.Value, @"appendix .+?(\:|\.) *(.+)", RegexOptions.IgnoreCase);
+                            var match = Regex.Match(c.Mark.Value.Value, @"appendix.+?(\:|\.) *(.+)", RegexOptions.IgnoreCase);
                             if (match != null && match.Groups.Count == 3) {
                                 c.Mark.Value.Value = match.Groups[2].Value;
                             }
@@ -950,8 +950,8 @@ namespace WordExtractor
 
         private void DetectCodeListings() {
             var code = "float:listing ! | end_caption:* !float:* end_float:listing";
-            var regex1 = new Regex("(in|using|with) ([A-Za-z]+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            var regex2 = new Regex("^([A-Za-z]+) ", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            var regex1 = new Regex("(in|using|with) ([A-Za-z+]+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            var regex2 = new Regex("^([A-Za-z+]+) ", RegexOptions.Compiled | RegexOptions.IgnoreCase);
             foreach (var c in Find(code)) {
                 var match1 = c.Mark.Previous.Value.Metadata == null ? regex1.Match(c.Mark.Previous.Value.Value) : null;
                 var match2 = c.Start.Next.Value.Metadata == null ? regex2.Match(c.Start.Next.Value.Value) : null;
@@ -975,7 +975,7 @@ namespace WordExtractor
                     if (NiceReferenceNames.TryGetValue(node.Value.Value.TrimStart('_'), out niceRef) ||
                         NiceReferenceNames.TryGetValue(node.Value.Value, out niceRef) ||
                         NiceReferenceNames.TryGetValue("_" + node.Value.Value, out niceRef)) {
-                        node.Value.Value = niceRef;
+                        node.Value.Value = niceRef + "_" + node.Value.Value.Trim(" _-".ToCharArray());
                     }
                 }
             }
