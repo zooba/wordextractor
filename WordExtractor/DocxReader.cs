@@ -29,19 +29,15 @@ namespace WordExtractor
         const string CustomXmlSchema = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml";
         const string HyperlinkSchema = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
 
-        public DocxReader(string sourceFile)
-        {
-            using (var SourceFile = Package.Open(sourceFile, System.IO.FileMode.Open, FileAccess.Read, FileShare.Read))
-            {
+        public DocxReader(string sourceFile) {
+            using (var SourceFile = Package.Open(sourceFile, System.IO.FileMode.Open, FileAccess.Read, FileShare.Read)) {
                 Document = Read(SourceFile.GetPart(DocumentXmlUri));
                 DocumentRels = Read(SourceFile.GetPart(DocumentRelsXmlUri));
                 Footnotes = Read(SourceFile.GetPart(FootnotesXmlUri));
-                try
-                {
+                try {
                     FootnotesRels = Read(SourceFile.GetPart(FootnotesRelsXmlUri));
                 }
-                catch (InvalidOperationException)
-                {
+                catch (InvalidOperationException) {
                     FootnotesRels = new List<Token>();
                 }
                 Numbering = Read(SourceFile.GetPart(NumberingXmlUri));
@@ -54,14 +50,12 @@ namespace WordExtractor
         public IList<Token> FootnotesRels { get; private set; }
         public IList<Token> Numbering { get; private set; }
 
-        private List<Token> Read(PackagePart part)
-        {
+        private List<Token> Read(PackagePart part) {
             // Read part
             if (part == null) throw new EndOfStreamException();
 
             XElement xml;
-            using (var stream = part.GetStream(FileMode.Open, FileAccess.Read))
-            {
+            using (var stream = part.GetStream(FileMode.Open, FileAccess.Read)) {
                 xml = XElement.Load(stream, LoadOptions.None);
             }
 
@@ -71,28 +65,23 @@ namespace WordExtractor
             return result;
         }
 
-        private void RecurseFillBuffer(XElement xml, List<Token> buffer)
-        {
-            if (xml.Name.LocalName == "oMath")
-            {
+        private void RecurseFillBuffer(XElement xml, List<Token> buffer) {
+            if (xml.Name.LocalName == "oMath") {
                 var reader = xml.CreateReader();
                 reader.Read();
                 buffer.Add(new Token("Smath", reader.ReadOuterXml()));
                 return;
             }
-            
+
             buffer.Add(new Token("S<", xml.Name.LocalName));
-            foreach (var a in xml.Attributes())
-            {
+            foreach (var a in xml.Attributes()) {
                 buffer.Add(new Token("Sa", a.Name.LocalName));
                 buffer.Add(new Token("S=", a.Value));
             }
-            foreach (var e in xml.Elements())
-            {
+            foreach (var e in xml.Elements()) {
                 RecurseFillBuffer(e, buffer);
             }
-            if (!xml.HasElements && !string.IsNullOrEmpty(xml.Value))
-            {
+            if (!xml.HasElements && !string.IsNullOrEmpty(xml.Value)) {
                 if (xml.Value == "*")
                     buffer.Add(new Token("\\*"));
                 else

@@ -27,8 +27,7 @@ namespace WordExtractor
 
         public IEnumerable<Token> Document { get { return DocumentTokens.AsEnumerable(); } }
 
-        public Simplifier(DocxReader reader, TextWriter warnings)
-        {
+        public Simplifier(DocxReader reader, TextWriter warnings) {
             Reader = reader;
             DocumentTokens = new LinkedList<Token>(reader.Document);
             DocumentRelsTokens = new LinkedList<Token>(reader.DocumentRels);
@@ -40,8 +39,7 @@ namespace WordExtractor
             Warnings = warnings;
         }
 
-        public void RunAll(int limit = 9)
-        {
+        public void RunAll(int limit = 9) {
             if (UpTo >= limit) return;
             Pass1();
             if (UpTo >= limit) return;
@@ -55,8 +53,7 @@ namespace WordExtractor
             if (UpTo >= limit) return;
         }
 
-        internal void Pass1()
-        {
+        internal void Pass1() {
             if (UpTo > 0) return;
 
             ConvertFootnoteCharacters();
@@ -89,8 +86,7 @@ namespace WordExtractor
             UpTo = 1;
         }
 
-        internal void Pass2()
-        {
+        internal void Pass2() {
             if (UpTo < 1) Pass1();
             if (UpTo > 1) return;
 
@@ -111,8 +107,7 @@ namespace WordExtractor
             UpTo = 2;
         }
 
-        internal void Pass3()
-        {
+        internal void Pass3() {
             if (UpTo < 2) Pass2();
             if (UpTo > 2) return;
 
@@ -134,8 +129,7 @@ namespace WordExtractor
             UpTo = 3;
         }
 
-        internal void Pass4()
-        {
+        internal void Pass4() {
             if (UpTo < 3) Pass3();
             if (UpTo > 3) return;
 
@@ -148,8 +142,7 @@ namespace WordExtractor
             UpTo = 4;
         }
 
-        internal void Pass5()
-        {
+        internal void Pass5() {
             if (UpTo < 4) Pass4();
             if (UpTo > 4) return;
 
@@ -173,21 +166,16 @@ namespace WordExtractor
             public static FindResult Empty = new FindResult { Start = null, Mark = null, End = null };
         }
 
-        private FindResult FindSequence(LinkedListNode<Token> start, string code)
-        {
+        private FindResult FindSequence(LinkedListNode<Token> start, string code) {
             int offset = 0, index = 0;
             var codeParts = code.Split(' ').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
 
-            for (int i = 0; i < codeParts.Count; i += 1)
-            {
-                if (codeParts[i] == "|")
-                {
+            for (int i = 0; i < codeParts.Count; i += 1) {
+                if (codeParts[i] == "|") {
                     offset = i;
                     codeParts.RemoveAt(i);
                     i -= 1;
-                }
-                else if (codeParts[i] == "!")
-                {
+                } else if (codeParts[i] == "!") {
                     codeParts[i] = "!\0:\0";
                 }
             }
@@ -195,16 +183,13 @@ namespace WordExtractor
             var codeTokens = codeParts.Select(Token.Parse).ToList();
             var result = new FindResult();
 
-            for (var c = start; c != null; c = c.Next)
-            {
-                if (index >= codeTokens.Count)
-                {
+            for (var c = start; c != null; c = c.Next) {
+                if (index >= codeTokens.Count) {
                     result.End = c.Previous;
                     return result;
                 }
 
-                if (codeTokens[index].Metadata != null && codeTokens[index].Metadata.StartsWith("!"))
-                {
+                if (codeTokens[index].Metadata != null && codeTokens[index].Metadata.StartsWith("!")) {
                     var t = codeTokens[index];
                     var abortToken = new Token(t.Metadata.Substring(1), t.Value);
                     index += 1;
@@ -215,41 +200,32 @@ namespace WordExtractor
                 }
 
                 if (index >= codeTokens.Count) continue;
-                else if (c.Value.WildcardEquals(codeTokens[index]))
-                {
+                else if (c.Value.WildcardEquals(codeTokens[index])) {
                     if (index == 0) result.Start = c;
                     if (index == offset) result.Mark = c;
                     index += 1;
-                }
-                else
-                {
+                } else {
                     index = 0;
                     c = result.Start ?? c;
                     result.Start = null;
                 }
             }
 
-            if (index >= codeTokens.Count)
-            {
+            if (index >= codeTokens.Count) {
                 result.End = start.List.Last;
                 return result;
             }
             return FindResult.Empty;
         }
 
-        private IEnumerable<FindResult> Find(string code)
-        {
+        private IEnumerable<FindResult> Find(string code) {
             LinkedListNode<Token> next = null;
-            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(next, code))
-            {
+            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(next, code)) {
                 next = c.Start.Previous;
                 yield return c;
-                if (next == null)
-                {
+                if (next == null) {
                     next = DocumentTokens.First.Next;
-                }
-                else
-                {
+                } else {
                     next = next.Next;
                     if (next != null) next = next.Next;
                     else break;
@@ -257,20 +233,17 @@ namespace WordExtractor
             }
         }
 
-        private int ReplaceSequence(LinkedListNode<Token> start, string code, string replace, int count = int.MaxValue)
-        {
+        private int ReplaceSequence(LinkedListNode<Token> start, string code, string replace, int count = int.MaxValue) {
             var replaceParts = replace.Split(' ').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
             var replaceTokens = replaceParts.Select(Token.Parse).ToList();
 
             LinkedListNode<Token> next = start;
             int index = 0;
             int replacements = 0;
-            for (var c = FindSequence(next, code); index < count && c.IsMatch; c = FindSequence(next, code), index += 1)
-            {
+            for (var c = FindSequence(next, code); index < count && c.IsMatch; c = FindSequence(next, code), index += 1) {
                 var list = c.List;
                 var tokens = new List<Token>();
-                for (var c2 = c.Start; c2 != null && c2 != c.End.Next; c2 = c2.Next)
-                {
+                for (var c2 = c.Start; c2 != null && c2 != c.End.Next; c2 = c2.Next) {
                     tokens.Add(c2.Value);
                 }
 
@@ -278,23 +251,19 @@ namespace WordExtractor
                 var post = c.End.Next;
                 next = post;
 
-                if (pre == null)
-                {
+                if (pre == null) {
                     while (list.First != post) list.RemoveFirst();
 
                     if (replaceTokens.Any()) list.AddFirst(new Token(replaceTokens.First()));
                     pre = list.First;
-                }
-                else
-                {
+                } else {
                     while (pre.Next != post) list.Remove(pre.Next);
 
                     if (replaceTokens.Any()) list.AddAfter(pre, new Token(replaceTokens.First()));
                     pre = pre.Next;
                 }
 
-                foreach (var t in replaceTokens.Skip(1))
-                {
+                foreach (var t in replaceTokens.Skip(1)) {
                     list.AddAfter(pre, new Token(t));
                     pre = pre.Next;
                 }
@@ -305,56 +274,46 @@ namespace WordExtractor
             return replacements;
         }
 
-        private void ConvertSoftHyphens()
-        {
+        private void ConvertSoftHyphens() {
             ReplaceSequence(DocumentTokens.First, "S<:softHyphen S>:softHyphen", "\0:\x00AD");
         }
 
-        private void RenameInstrTextRuns()
-        {
+        private void RenameInstrTextRuns() {
             ReplaceSequence(DocumentTokens.First, "S<:instrText", "S<:t");
             ReplaceSequence(DocumentTokens.First, "S>:instrText", "S>:t");
         }
 
-        private void RemoveDeletedTextRuns()
-        {
+        private void RemoveDeletedTextRuns() {
             ReplaceSequence(DocumentTokens.First, "S<:p !S:<r S<:rPr !S>:rPr S<:del ! S>:p", "");
         }
 
-        private void RemoveInvisibleText()
-        {
+        private void RemoveInvisibleText() {
             ReplaceSequence(DocumentTokens.First, "S<:r S<:rPr !S>:rPr S<:vanish S>:vanish ! S>:r", "");
             ReplaceSequence(DocumentTokens.First, "S<:p !S<:r S<:rPr !S>:rPr S<:vanish S>:vanish ! S>:p", "");
         }
 
-        private void RemoveBibliography()
-        {
+        private void RemoveBibliography() {
             ReplaceSequence(DocumentTokens.First, "S<:sdt !S>:sdt S<:sdt !S>:sdt S<:bibliography S>:bibliography ! S>:sdt ! S>:sdt", "bibliography:");
         }
 
-        private void RemoveProofingErrors()
-        {
+        private void RemoveProofingErrors() {
             ReplaceSequence(DocumentTokens.First, "S<:proofErr ! S>:proofErr", "");
         }
 
-        private void ConvertFieldCharacters()
-        {
+        private void ConvertFieldCharacters() {
             var code = "S<:fldChar Sa:fldCharType | S=:* S>:fldChar";
 
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Start.Value.Metadata = "field_" + c.Mark.Value.Value;
                 c.Start.Value.Value = null;
                 c.Start.Next.RemoveTo(c.End);
             }
         }
 
-        private void ConvertBookmarks()
-        {
+        private void ConvertBookmarks() {
             var code = "S<:bookmarkStart !S>:bookmarkStart Sa:id S=:* !S>:bookmarkStart Sa:name | S=:* ! S>:bookmarkStart";
 
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Start.Value.Metadata = "bookmark_start";
                 var name = c.Start.Value.Value = c.Mark.Value.Value;
 
@@ -367,18 +326,15 @@ namespace WordExtractor
                 c2.Mark.Value.Value = name;
                 c2.Start.Next.RemoveTo(c2.End);
             }
-            
+
             ReplaceSequence(DocumentTokens.First, "bookmark_start:_GoBack bookmark_end:_GoBack", "");
         }
 
-        private void ConvertBookmarksToLabels()
-        {
+        private void ConvertBookmarksToLabels() {
             var code = "para_style:* bookmark_start:* ! bookmark_end:* eop:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 if (c.Start.Value.Value.StartsWith("Heading", StringComparison.CurrentCultureIgnoreCase) ||
-                    c.Start.Value.Value.StartsWith("Appendix", StringComparison.CurrentCultureIgnoreCase))
-                {
+                    c.Start.Value.Value.StartsWith("Appendix", StringComparison.CurrentCultureIgnoreCase)) {
                     var label = c.Start.Next.Value.Value.TrimStart('_');
                     c.List.Remove(c.Start.Next);
                     c.List.Remove(c.End.Previous);
@@ -387,20 +343,16 @@ namespace WordExtractor
             }
         }
 
-        private void ConvertOtherBookmarks()
-        {
+        private void ConvertOtherBookmarks() {
             var code = "bookmark_start:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Start.Value.Metadata = "label";
                 ReplaceSequence(c.Start, "bookmark_end:" + c.Start.Value.Value, "", 1);
             }
         }
 
-        private void ConvertImages()
-        {
-            foreach (var c in Find("S<:drawing !S>:drawing S<:docPr !S>:docPr Sa:title | S=:* ! S>:drawing"))
-            {
+        private void ConvertImages() {
+            foreach (var c in Find("S<:drawing !S>:drawing S<:docPr !S>:docPr Sa:title | S=:* ! S>:drawing")) {
                 c.Start.Value.Metadata = "image";
                 c.Start.Value.Value = c.Mark.Value.Value;
                 c.Start.Next.RemoveTo(c.End);
@@ -408,29 +360,24 @@ namespace WordExtractor
             ReplaceSequence(DocumentTokens.First, "S<:drawing ! S>:drawing", "image:\0");
         }
 
-        private void ConvertFootnoteCharacters()
-        {
+        private void ConvertFootnoteCharacters() {
             var code = "S<:r !S>:r S<:footnoteReference Sa:id | S=:* S>:footnoteReference ! S>:r";
 
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Start.Value.Metadata = "footnote_ref";
                 c.Start.Value.Value = c.Mark.Value.Value;
                 c.Start.Next.RemoveTo(c.End);
             }
         }
 
-        private void ConvertFootnoteRuns()
-        {
+        private void ConvertFootnoteRuns() {
             var code = "footnote_ref:*";
 
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var id = c.Mark.Value.Value;
                 var match = FindSequence(FootnoteTokens.First, "S<:footnote !S>:footnote Sa:id | S=:" + id + " ! S>:footnote");
 
-                if (match.IsMatch)
-                {
+                if (match.IsMatch) {
                     var dest = c.List.AddAfter(c.Mark, match.Mark.Next, match.End.Previous);
                     c.Mark.Value.Metadata = "footnote";
                     c.List.AddAfter(dest, new Token("end_footnote", c.Mark.Value.Value));
@@ -438,38 +385,31 @@ namespace WordExtractor
             }
         }
 
-        private void TidyFootnotes()
-        {
+        private void TidyFootnotes() {
             var code = "footnote:* ! \0:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Mark.Next.RemoveTo(c.End.Previous);
                 c.End.Value.Value = c.End.Value.Value.TrimStart(' ');
             }
 
             code = "eop:* end_footnote:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Start.Remove();
             }
         }
 
-        private void RemoveEmptyElements(string elementName)
-        {
+        private void RemoveEmptyElements(string elementName) {
             ReplaceSequence(DocumentTokens.First, string.Format("S<:{0} S>:{0}", elementName), "");
         }
 
-        private void ReplaceEmptyElements(string elementName, string newMetadata)
-        {
+        private void ReplaceEmptyElements(string elementName, string newMetadata) {
             ReplaceSequence(DocumentTokens.First, string.Format("S<:{0} S>:{0}", elementName), newMetadata + ":\0");
         }
 
-        private void ConvertBreaks()
-        {
+        private void ConvertBreaks() {
             var code = "S<:br S>:br";
 
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Start.Value.Metadata = "linebreak";
                 c.Start.Value.Value = null;
                 c.End.Remove();
@@ -477,16 +417,14 @@ namespace WordExtractor
 
             code = "S<:br Sa:type | S=:* S>:br";
 
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Start.Value.Metadata = c.Mark.Value.Value + "break";
                 c.Start.Value.Value = null;
                 c.Start.Next.RemoveTo(c.End);
             }
         }
 
-        private void RemoveRSIDAttributes()
-        {
+        private void RemoveRSIDAttributes() {
             var codes = new[]
             {
                 "Sa:rsidR S=:*",
@@ -497,35 +435,30 @@ namespace WordExtractor
                 "Sa:rsidTr S=:*",
             };
 
-            foreach (var code in codes)
-            {
+            foreach (var code in codes) {
                 ReplaceSequence(DocumentTokens.First, code, "");
             }
         }
 
-        private void RemoveTextElementBrackets()
-        {
+        private void RemoveTextElementBrackets() {
             ReplaceSequence(DocumentTokens.First, "S<:t Sa:space S=:preserve", "");
             ReplaceSequence(DocumentTokens.First, "S<:t", "");
             ReplaceSequence(DocumentTokens.First, "S>:t", "");
         }
 
-        private void ExtractSdtContent()
-        {
+        private void ExtractSdtContent() {
             ReplaceSequence(DocumentTokens.First, "S<:sdt ! S<:sdtContent", "");
             ReplaceSequence(DocumentTokens.First, "S>:sdtContent S>:sdt", "");
         }
 
-        private void ConvertNumbering()
-        {
+        private void ConvertNumbering() {
             var code = "S<:pPr !S>:pPr | S<:numPr !S>:pPr S>:numPr";
             var levelCode = "S<:ilvl Sa:val | S=:*";
             var idCode = "S<:numId Sa:val | S=:*";
 
             var formatCode = "S<:abstractNum Sa:abstractNumId S=:{0} !S>:abstractNum S<:lvl Sa:ilvl S=:{1} !S>:lvl S<:numFmt Sa:val | S=:*";
 
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var c2 = FindSequence(c.Start, levelCode);
                 var c3 = FindSequence(c.Start, idCode);
 
@@ -533,16 +466,13 @@ namespace WordExtractor
                 string id = null;
                 string type = "unknown";
 
-                if (c3.IsMatch)
-                {
+                if (c3.IsMatch) {
                     id = c3.Mark.Value.Value;
                     var c4 = FindSequence(NumberingTokens.First, "S<:num Sa:numId S=:" + id + " S<:abstractNumId Sa:val | S=:*");
-                    if (c4.IsMatch)
-                    {
+                    if (c4.IsMatch) {
                         id = c4.Mark.Value.Value;
                         var c5 = FindSequence(NumberingTokens.First, string.Format(formatCode, id, level));
-                        if (c5.IsMatch)
-                        {
+                        if (c5.IsMatch) {
                             type = c5.Mark.Value.Value;
                         }
                     }
@@ -554,19 +484,16 @@ namespace WordExtractor
             }
         }
 
-        private void CombineNumberedLists()
-        {
+        private void CombineNumberedLists() {
             var code = "para_style:* listitem:*";
 
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Start.Remove();
             }
 
             code = "listitem:*";
 
-            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.End, code))
-            {
+            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.End, code)) {
                 var type = c.Start.Value.Value;
                 if (type.Contains(',')) type = type.Substring(0, type.IndexOf(','));
                 c.List.AddBefore(c.Start, new Token("list", type));
@@ -575,8 +502,7 @@ namespace WordExtractor
                 var expected = c.Start;
                 for (var next = FindSequence(c.Start, nextCode);
                     next.IsMatch && next.Start == expected;
-                    next = FindSequence(next.Mark, nextCode))
-                {
+                    next = FindSequence(next.Mark, nextCode)) {
                     next.Start.Value.Metadata = "item";
                     next.Start.Value.Value = null;
                     expected = next.Mark;
@@ -587,23 +513,18 @@ namespace WordExtractor
 
                 var lastCode = string.Format("item:\0 ! eop:*", expected);
                 var last = FindSequence(expected, lastCode);
-                if (last.IsMatch && last.Start == expected)
-                {
+                if (last.IsMatch && last.Start == expected) {
                     last.List.AddAfter(last.End, new Token("end_list", type));
-                }
-                else
-                {
+                } else {
                     Warnings.WriteLine("Something broke...");
                 }
                 c.End = expected;
             }
         }
 
-        private void ConvertStyles()
-        {
+        private void ConvertStyles() {
             var code = "S<:r !S>:r S<:rPr !S>:rPr S<:rStyle Sa:val | S=:* S>:rStyle";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var first = c.Start.Next;
                 first.Value.Metadata = "run_style";
                 first.Value.Value = c.Mark.Value.Value;
@@ -613,8 +534,7 @@ namespace WordExtractor
 
 
             code = "S<:pPr !S>:pPr S<:pStyle Sa:val | S=:* S>:pStyle";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var first = c.Start.Next;
                 first.Value.Metadata = "para_style";
                 first.Value.Value = c.Mark.Value.Value;
@@ -622,11 +542,9 @@ namespace WordExtractor
             }
         }
 
-        private void ConvertFields()
-        {
+        private void ConvertFields() {
             var code = "S<:fldSimple Sa:instr | S=:* ! S>:fldSimple";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Start.Value.Metadata = "field_begin";
                 c.List.Remove(c.Start.Next);
                 c.Mark.Value.Metadata = null;
@@ -634,114 +552,89 @@ namespace WordExtractor
             }
 
             code = "field_begin:* | \0:* ! field_end:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var command = c.Mark.Value.Value.Trim();
                 var options = command.Substring(command.IndexOf(' ')).TrimStart();
                 command = command.Substring(0, command.IndexOf(' ')).ToUpperInvariant();
                 var firstOption = (options.Contains(' ')) ? (options.Substring(0, options.IndexOf(' '))) : options;
 
-                if (command == "CITATION" || command == "SEQ" || command == "REF")
-                {
+                if (command == "CITATION" || command == "SEQ" || command == "REF") {
                     c.Start.Value.Metadata = command.ToLowerInvariant();
                     c.Start.Value.Value = firstOption;
                     c.Start.Next.RemoveTo(c.End);
-                }
-                else if (command == "HYPERLINK")
-                {
+                } else if (command == "HYPERLINK") {
                     c.Start.Value.Metadata = command.ToLowerInvariant();
                     c.Start.Value.Value = options.Trim(' ', '"', '\'');
                     c.Start.Next.RemoveTo(c.End);
-                }
-                else
-                {
+                } else {
                     Debug.WriteLine("Unhandled field: " + command);
                 }
 
-                if (command == "REF")
-                {
+                if (command == "REF") {
                     c.Start.Value.Value = c.Start.Value.Value.TrimStart('_');
-                    if (options.Contains("\\# 0"))
-                    {
+                    if (options.Contains("\\# 0")) {
                         c.Start.Value.Metadata = "ref_number";
-                    }
-                    else if (options.Contains("\\#"))
-                    {
+                    } else if (options.Contains("\\#")) {
                         c.Start.Remove();
                     }
                 }
             }
         }
 
-        private void ResolveURLs()
-        {
+        private void ResolveURLs() {
             var code = "url_ref:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var t = c.Start.Value;
                 var code2 = "Sa:Id S=:" + c.Start.Value.Value + " !S>:Relationship Sa:Target | S=:*";
                 var c2 = FindSequence(DocumentRelsTokens.First, code2);
-                if (!c2.IsMatch)
-                {
+                if (!c2.IsMatch) {
                     t.Metadata = "error";
                     t.Value = "Unresolved url reference " + t.Value;
-                }
-                else
-                {
+                } else {
                     t.Metadata = "hyperlink";
                     t.Value = c2.Mark.Value.Value;
                 }
             }
 
             code = "url_ref_footnote:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var t = c.Start.Value;
                 var code2 = "Sa:Id S=:" + c.Start.Value.Value + " !S>:Relationship Sa:Target | S=:*";
                 var c2 = FindSequence(FootnoteRelsTokens.First, code2);
-                if (!c2.IsMatch)
-                {
+                if (!c2.IsMatch) {
                     t.Metadata = "error";
                     t.Value = "Unresolved url reference " + t.Value;
-                }
-                else
-                {
+                } else {
                     t.Metadata = "hyperlink";
                     t.Value = c2.Mark.Value.Value;
                 }
             }
         }
 
-        private void CombineReferences()
-        {
+        private void CombineReferences() {
             var code = "ref:* | \0:* ref:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 if (c.Mark.Value.Value.Trim().Equals(",")) c.Mark.Remove();
                 if (c.Mark.Value.Value.Trim().Equals("and", StringComparison.CurrentCultureIgnoreCase)) c.Mark.Remove();
             }
 
             code = "ref:* ref:*";
-            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code))
-            {
+            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code)) {
                 c.Start.Value.Value += "," + c.End.Value.Value;
                 c.End.Remove();
             }
 
             code = "\0:* ref:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 if (c.Start.Value.Value.TrimEnd().EndsWith(".")) c.End.Value.Metadata = "Ref";
             }
             code = "eop:* ref:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.End.Value.Metadata = "Ref";
             }
         }
 
-        private void IgnoreProperties()
-        {
+        private void IgnoreProperties() {
             var codes = new[] {
                 "S<:rPr !S>:rPr | S<:kern ! S>:kern",
                 "S<:rPr !S>:rPr | S<:rFonts ! S>:rFonts",
@@ -759,106 +652,86 @@ namespace WordExtractor
                 "S<:cnfStyle ! S>:cnfStyle",
             };
 
-            foreach (var code in codes)
-            {
-                foreach (var c in Find(code))
-                {
+            foreach (var code in codes) {
+                foreach (var c in Find(code)) {
                     c.Mark.RemoveTo(c.End);
                 }
             }
         }
 
-        private void RemoveProperties()
-        {
+        private void RemoveProperties() {
             ReplaceSequence(DocumentTokens.First, "S<:rPr", "");
             ReplaceSequence(DocumentTokens.First, "S>:rPr", "");
             ReplaceSequence(DocumentTokens.First, "S<:pPr", "");
             ReplaceSequence(DocumentTokens.First, "S>:pPr", "");
         }
 
-        private void SimplifyRuns()
-        {
+        private void SimplifyRuns() {
             var code = "S<:r | run_style:* ! S>:r";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.List.Remove(c.Start);
                 c.End.Value.Metadata = "end_run_style";
                 c.End.Value.Value = c.Mark.Value.Value;
             }
 
             code = "S<:r ! S>:r";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.List.Remove(c.Start);
                 c.List.Remove(c.End);
             }
         }
 
-        private void SimplifyParagraphs()
-        {
+        private void SimplifyParagraphs() {
             ReplaceSequence(DocumentTokens.First, "S<:p", "");
             ReplaceSequence(DocumentTokens.First, "S>:p", "eop:");
             ReplaceSequence(DocumentTokens.First, "para_style:BodyText", "");
 
             var code = "\0:* \0:*";
-            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code))
-            {
+            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code)) {
                 c.Start.Value.Value += c.End.Value.Value;
                 c.List.Remove(c.End);
             }
         }
 
-        private void CombineRunStyles()
-        {
+        private void CombineRunStyles() {
             var code = "end_run_style:* run_style:*";
 
-            foreach (var c in Find(code))
-            {
-                if (c.Start.Value.Value == c.End.Value.Value)
-                {
+            foreach (var c in Find(code)) {
+                if (c.Start.Value.Value == c.End.Value.Value) {
                     c.Start.Remove();
                     c.End.Remove();
                 }
             }
         }
 
-        private void CombineCitations()
-        {
+        private void CombineCitations() {
             var code = "citation:* citation:*";
-            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code))
-            {
+            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code)) {
                 c.Start.Value.Value += "," + c.End.Value.Value;
                 c.End.Remove();
             }
         }
 
-        private void ConvertStylesToEnvironments()
-        {
+        private void ConvertStylesToEnvironments() {
             var styles = new[] { "Abstract" };
-            foreach (var style in styles)
-            {
+            foreach (var style in styles) {
                 var code = "para_style:" + style + " ! | eop:";
-                foreach (var c in Find(code))
-                {
-                    c.Start.Value.Metadata = "begin";
+                foreach (var c in Find(code)) {
+                    c.Start.Value.Metadata = "wxbegin";
                     c.Start.Value.Value = style.ToLowerInvariant();
-                    c.Mark.Value.Metadata = "end";
+                    c.Mark.Value.Metadata = "wxend";
                     c.Mark.Value.Value = style.ToLowerInvariant();
                 }
             }
 
             {
                 var code = "para_style:* !eop:* | \0:*";
-                foreach (var c in Find(code))
-                {
-                    if (c.Start.Value.Value.StartsWith("heading", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        if (c.Mark.Value.Value.StartsWith("appendix", StringComparison.CurrentCultureIgnoreCase))
-                        {
+                foreach (var c in Find(code)) {
+                    if (c.Start.Value.Value.StartsWith("heading", StringComparison.InvariantCultureIgnoreCase)) {
+                        if (c.Mark.Value.Value.StartsWith("appendix", StringComparison.CurrentCultureIgnoreCase)) {
                             c.Start.Value.Value = "Appendix";
                             var match = Regex.Match(c.Mark.Value.Value, @"appendix .+?(\:|\.) *(.+)", RegexOptions.IgnoreCase);
-                            if (match != null && match.Groups.Count == 3)
-                            {
+                            if (match != null && match.Groups.Count == 3) {
                                 c.Mark.Value.Value = match.Groups[2].Value;
                             }
                         }
@@ -867,12 +740,10 @@ namespace WordExtractor
             }
         }
 
-        private void ConvertMath()
-        {
+        private void ConvertMath() {
             var code = "Smath:*";
 
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var xslt1 = new XslCompiledTransform();
                 var xslt2 = new XslCompiledTransform();
                 xslt1.Load(typeof(OMMLMML));
@@ -896,26 +767,22 @@ namespace WordExtractor
             }
 
             code = "S<:tc !S>:tc S<:oMathPara | math:* S>:oMathPara";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Mark.Previous.Remove();
                 c.Mark.Next.Remove();
             }
 
             code = "S<:oMathPara | math:* S>:oMathPara";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Mark.Value.Metadata = "math_para";
                 c.Mark.Previous.Remove();
                 c.Mark.Next.Remove();
             }
         }
 
-        private void ConvertHyperlinks()
-        {
+        private void ConvertHyperlinks() {
             var code = "S<:hyperlink !S<:r Sa:id | S=:* ! S>:hyperlink";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Start.Value.Metadata = "url_ref";
                 c.Start.Value.Value = c.Mark.Value.Value;
                 c.Start.Next.RemoveTo(c.End);
@@ -924,22 +791,19 @@ namespace WordExtractor
             ReplaceSequence(DocumentTokens.First, "S<:hyperlink ! S>:hyperlink", "");
 
             code = "footnote:* !end_footnote:* | url_ref:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 c.Mark.Value.Metadata = "url_ref_footnote";
             }
         }
 
-        private void CondenseTables()
-        {
+        private void CondenseTables() {
             ReplaceSequence(DocumentTokens.First, "S<:tblPr ! S>:tblPr", "");
             ReplaceSequence(DocumentTokens.First, "S<:gridCol ! S>:gridCol", "table_def_col:\0");
             ReplaceSequence(DocumentTokens.First, "S<:tcPr ! S>:tcPr", "");
             ReplaceSequence(DocumentTokens.First, "S<:trPr ! S>:trPr", "");
         }
 
-        private void ConvertTables()
-        {
+        private void ConvertTables() {
             ReplaceSequence(DocumentTokens.First, "S<:tbl", "table:");
             ReplaceSequence(DocumentTokens.First, "S<:tblGrid", "");
             ReplaceSequence(DocumentTokens.First, "S>:tblGrid", "");
@@ -952,19 +816,16 @@ namespace WordExtractor
             ReplaceSequence(DocumentTokens.First, "S>:tbl", "end_table:");
 
             var code = "table:* table_def_col:*";
-            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code))
-            {
+            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code)) {
                 c.Start.Value.Value = (c.Start.Value.Value ?? "|") + "l|";
                 c.End.Remove();
             }
         }
 
-        private void ConvertCaptions()
-        {
+        private void ConvertCaptions() {
             // Named (referenced) floats
             var code = "para_style:Caption | bookmark_start:* ! seq:* bookmark_end:* ! eop:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var label = c.Mark.Value.Value;
                 var c2 = FindSequence(c.Start, "seq:* bookmark_end:" + label);
                 if (!c2.IsMatch) continue;
@@ -974,8 +835,7 @@ namespace WordExtractor
                 c.Start.Value.Value = type;
                 c.Start.Next.RemoveTo(c2.End);
 
-                if (c.Start.Next.Value.Metadata == null)
-                {
+                if (c.Start.Next.Value.Metadata == null) {
                     c.Start.Next.Value.Value = c.Start.Next.Value.Value.TrimStart(' ', '-', '.', ':', '‒', '–', '—');
                 }
 
@@ -985,16 +845,14 @@ namespace WordExtractor
 
             // Anonymous (unreferenced) floats
             code = "para_style:Caption ! | seq:* ! eop:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var type = c.Mark.Value.Value.ToLower();
 
                 c.Start.Value.Metadata = "float";
                 c.Start.Value.Value = type;
                 c.Start.Next.RemoveTo(c.Mark);
 
-                if (c.Start.Next.Value.Metadata == null)
-                {
+                if (c.Start.Next.Value.Metadata == null) {
                     c.Start.Next.Value.Value = c.Start.Next.Value.Value.TrimStart(' ', '-', '.', ':', '‒', '–', '—');
                 }
 
@@ -1007,20 +865,16 @@ namespace WordExtractor
             "the", "a", "an", "and", "in", "to", "for", "as", "of", "show", "shows", "shown"
         });
 
-        private string NiceNameFromCaption(LinkedListNode<Token> caption, string possibility = null)
-        {
-            if (string.IsNullOrWhiteSpace(possibility))
-            {
+        private string NiceNameFromCaption(LinkedListNode<Token> caption, string possibility = null) {
+            if (string.IsNullOrWhiteSpace(possibility)) {
                 var name_parts = new List<string>();
                 for (var node = caption;
                     node != null && node.Value != null && node.Value.Metadata != "end_caption";
-                    node = node.Next)
-                {
+                    node = node.Next) {
                     if (node.Value.Metadata != null) continue;
                     var words = node.Value.Value.ToLower();
                     words = Regex.Replace(words, "[^a-z0-9]", " ");
-                    foreach (var word in words.Split())
-                    {
+                    foreach (var word in words.Split()) {
                         if (string.IsNullOrWhiteSpace(word) || BoringWords.Contains(word)) continue;
                         name_parts.Add(word.Substring(0, 1).ToUpper() + word.Substring(1));
                     }
@@ -1031,12 +885,10 @@ namespace WordExtractor
             if (string.IsNullOrWhiteSpace(possibility))
                 return null;
 
-            if (NiceReferenceNames.ContainsValue(possibility))
-            {
+            if (NiceReferenceNames.ContainsValue(possibility)) {
                 int alt_count = 1;
                 var alt = possibility + alt_count.ToString();
-                while (NiceReferenceNames.ContainsValue(alt))
-                {
+                while (NiceReferenceNames.ContainsValue(alt)) {
                     alt_count += 1;
                     alt = possibility + alt_count.ToString();
                 }
@@ -1046,12 +898,10 @@ namespace WordExtractor
             return possibility;
         }
 
-        private void ConvertFloats()
-        {
+        private void ConvertFloats() {
             // Floats based on tables
             var code = "float:* ! | label:* table:* ! end_table:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var niceRef = NiceNameFromCaption(c.Start);
                 if (!string.IsNullOrWhiteSpace(niceRef))
                     NiceReferenceNames[c.Mark.Value.Value] = niceRef;
@@ -1061,8 +911,7 @@ namespace WordExtractor
 
             // Floats based on images
             code = "float:* ! | label:* image:* eop:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var niceRef = NiceNameFromCaption(c.Start, c.Mark.Next.Value.Value);
                 if (!string.IsNullOrWhiteSpace(niceRef))
                     NiceReferenceNames[c.Mark.Value.Value] = niceRef;
@@ -1072,8 +921,7 @@ namespace WordExtractor
 
             // Floats based on equation
             code = "float:* ! label:* | math_para:* eop:*";
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var niceRef = NiceNameFromCaption(c.Start);
                 if (!string.IsNullOrWhiteSpace(niceRef))
                     NiceReferenceNames[c.Mark.Previous.Value.Value] = niceRef;
@@ -1085,16 +933,14 @@ namespace WordExtractor
 
             // Floats based on paragraph style
             code = "float:* ! label:* | para_style:*";
-            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start.Next, code))
-            {
+            for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start.Next, code)) {
                 var niceRef = NiceNameFromCaption(c.Start);
                 if (!string.IsNullOrWhiteSpace(niceRef))
                     NiceReferenceNames[c.Mark.Previous.Value.Value] = niceRef;
 
                 var style = c.Mark.Value;
                 var c2 = c;
-                for (c2 = FindSequence(c2.End, "eop:*"); c2.IsMatch; c2 = FindSequence(c2.End.Next, "eop:*"))
-                {
+                for (c2 = FindSequence(c2.End, "eop:*"); c2.IsMatch; c2 = FindSequence(c2.End.Next, "eop:*")) {
                     if (c2.End.Next == null || !c2.End.Next.Value.Equals(style)) break;
                 }
                 if (c2.IsMatch) c.End = c2.End;
@@ -1102,60 +948,48 @@ namespace WordExtractor
             }
         }
 
-        private void DetectCodeListings()
-        {
+        private void DetectCodeListings() {
             var code = "float:listing ! | end_caption:* !float:* end_float:listing";
             var regex1 = new Regex("(in|using|with) ([A-Za-z]+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
             var regex2 = new Regex("^([A-Za-z]+) ", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            foreach (var c in Find(code))
-            {
+            foreach (var c in Find(code)) {
                 var match1 = c.Mark.Previous.Value.Metadata == null ? regex1.Match(c.Mark.Previous.Value.Value) : null;
                 var match2 = c.Start.Next.Value.Metadata == null ? regex2.Match(c.Start.Next.Value.Value) : null;
-                if (match1 != null && match1.Success)
-                {
+                if (match1 != null && match1.Success) {
                     c.Start.Value.Value = c.End.Value.Value = "listing_" + match1.Groups[2].Value.ToLower();
-                }
-                else if (match2 != null && match2.Success)
-                {
+                } else if (match2 != null && match2.Success) {
                     c.Start.Value.Value = c.End.Value.Value = "listing_" + match2.Groups[1].Value.ToLower();
                 }
             }
         }
 
-        private void UseNiceReferenceNames()
-        {
-            for (var node = DocumentTokens.First; node != null; node = node.Next)
-            {
+        private void UseNiceReferenceNames() {
+            for (var node = DocumentTokens.First; node != null; node = node.Next) {
                 if (node == null || node.Value == null ||
                     node.Value.Metadata == null || node.Value.Value == null)
                     continue;
 
                 if (node.Value.Metadata.Equals("ref", StringComparison.InvariantCultureIgnoreCase) ||
-                    node.Value.Metadata.Equals("label", StringComparison.InvariantCultureIgnoreCase))
-                {
+                    node.Value.Metadata.Equals("label", StringComparison.InvariantCultureIgnoreCase)) {
                     string niceRef;
                     if (NiceReferenceNames.TryGetValue(node.Value.Value.TrimStart('_'), out niceRef) ||
                         NiceReferenceNames.TryGetValue(node.Value.Value, out niceRef) ||
-                        NiceReferenceNames.TryGetValue("_" + node.Value.Value, out niceRef))
-                    {
+                        NiceReferenceNames.TryGetValue("_" + node.Value.Value, out niceRef)) {
                         node.Value.Value = niceRef;
                     }
                 }
             }
         }
 
-        private void TidyDocumentStartEnd()
-        {
+        private void TidyDocumentStartEnd() {
             ReplaceSequence(DocumentTokens.First, "S<:document ! S<:body", "document:", 1);
             ReplaceSequence(DocumentTokens.First, "S>:body S>:document", "end:document", 1);
 
             var parts = new[] { "Title", "Author" };
 
-            foreach (var part in parts)
-            {
+            foreach (var part in parts) {
                 var code = "para_style:" + part + " | \0:* eop:*";
-                foreach (var c in Find(code))
-                {
+                foreach (var c in Find(code)) {
                     c.Start.Remove();
                     c.End.Remove();
                     c.Mark.Value.Metadata = part.ToLower();

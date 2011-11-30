@@ -13,12 +13,8 @@
 <xsl:template match="m:mfrac">
 	<xsl:choose>
 		<xsl:when test="@bevelled='true'">
-<!--			<xsl:text>\raisebox{1ex}{</xsl:text>
-			<xsl:apply-templates select="./*[1]"/>
-			<xsl:text>}\!\left/ \!\raisebox{-1ex}{</xsl:text>
-			<xsl:apply-templates select="./*[2]"/>
-			<xsl:text>}\right.</xsl:text>-->
-		</xsl:when>
+      <xsl:text>\sfrac{</xsl:text>
+    </xsl:when>
 		<xsl:when test="@linethickness">
 			<xsl:text>\genfrac{}{}{</xsl:text>
 			<xsl:choose>

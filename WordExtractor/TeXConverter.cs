@@ -28,10 +28,10 @@ namespace WordExtractor
 
         private static readonly string[] KnownListingLanguages = new[] { "python", "esdl", "pseudocode" };
 
-        public TeXConverter(IEnumerable<Token> source)
-        {
+        public TeXConverter(IEnumerable<Token> source, bool asChapter) {
             Tokens = source.ToList();
-            HeadingOffsetLevel = 1;
+            AsChapter = asChapter;
+            HeadingOffsetLevel = asChapter ? 0 : 1;
 
             OutputFiles = new Dictionary<string, TextWriter>();
 
@@ -45,13 +45,17 @@ namespace WordExtractor
             Conversions = new Dictionary<string, Func<string, Token>>(DefaultConversions);
             Conversions["para_style"] = ConvertParagraphStyle;
             Conversions["eop"] = ConvertEndOfParagraph;
+            if (AsChapter) {
+                Conversions["document"] = (_ => null);
+                Conversions["bibliography"] = (_ => null);
+                Conversions["end"] = (text => text == "document" ? null : new Token("\\end{" + text + "}\r\n"));
+            }
 
             // Initialise substitutions lists
             TextSubstitutions = new List<Tuple<string, string>>();
             {
                 var reader = new System.IO.StringReader(Properties.Resources.TextSubstitutions);
-                for (var line = reader.ReadLine(); line != null; line = reader.ReadLine())
-                {
+                for (var line = reader.ReadLine(); line != null; line = reader.ReadLine()) {
                     var parts = line.Split('\t');
                     var first = parts[0];
                     if (first.StartsWith("0x")) first = char.ConvertFromUtf32(Convert.ToInt32(first.Substring(2), 16));
@@ -63,8 +67,7 @@ namespace WordExtractor
             MathSubstitutions = new List<Tuple<string, string>>();
             {
                 var reader = new System.IO.StringReader(Properties.Resources.MathSubstitutions);
-                for (var line = reader.ReadLine(); line != null; line = reader.ReadLine())
-                {
+                for (var line = reader.ReadLine(); line != null; line = reader.ReadLine()) {
                     var parts = line.Split('\t');
                     var first = parts[0];
                     if (first.StartsWith("0x")) first = char.ConvertFromUtf32(Convert.ToInt32(first.Substring(2), 16));
@@ -80,20 +83,29 @@ namespace WordExtractor
         /// </summary>
         public int HeadingOffsetLevel { get; set; }
 
+        private bool AsChapter;
         private bool InVerbatim;
 
-        public void Run(TextWriter errors = null)
-        {
+        public void Run(TextWriter errors = null) {
             if (errors == null) errors = new StringWriter();
 
             TextWriter preamble = null, document = null, bibliography = null;
-            if (!OutputFiles.TryGetValue(PreambleKey, out preamble)) OutputFiles[PreambleKey] = preamble = new StringWriter();
             if (!OutputFiles.TryGetValue(DocumentKey, out document)) OutputFiles[DocumentKey] = document = new StringWriter();
-            if (!OutputFiles.TryGetValue(BibliographyKey, out bibliography)) OutputFiles[BibliographyKey] = bibliography = new StringWriter();
+            if (AsChapter) {
+                OutputFiles.Remove(PreambleKey);
+                OutputFiles.Remove(BibliographyKey);
+            } else {
+                if (!OutputFiles.TryGetValue(PreambleKey, out preamble))
+                    OutputFiles[PreambleKey] = preamble = new StringWriter();
+                if (!OutputFiles.TryGetValue(BibliographyKey, out bibliography))
+                    OutputFiles[BibliographyKey] = bibliography = new StringWriter();
+            }
 
-            preamble.Write(Properties.Resources.LaTeXPreamble);
-            document.WriteLine("\\input{" + PreambleKey + "}");
-            document.WriteLine();
+            if (preamble != null) {
+                preamble.Write(Properties.Resources.LaTeXPreamble);
+                document.WriteLine("\\input{" + PreambleKey + "}");
+                document.WriteLine();
+            }
 
             var target = document;
             StringWriter nextFloat = null;
@@ -105,24 +117,16 @@ namespace WordExtractor
             knownFloats.Add("figure");
             knownFloats.Add("listing");
 
-            foreach (var t in DoConvert(Tokens))
-            {
-                if (t.Metadata == null)
-                {
+            foreach (var t in DoConvert(Tokens)) {
+                if (t.Metadata == null) {
                     var text = t.Value;
                     if (nextFloat != null) nextFloat.Write(text);
                     else target.Write(text);
-                }
-                else if (t.Metadata.Equals("error", StringComparison.InvariantCultureIgnoreCase))
-                {
+                } else if (t.Metadata.Equals("error", StringComparison.InvariantCultureIgnoreCase)) {
                     if (errors != null) errors.WriteLine("Unexpected token: " + t.Value);
-                }
-                else if (t.Metadata.Equals("preamble", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    preamble.Write(t.Value);
-                }
-                else if (t.Metadata.StartsWith("float_", StringComparison.InvariantCultureIgnoreCase))
-                {
+                } else if (t.Metadata.Equals("preamble", StringComparison.InvariantCultureIgnoreCase)) {
+                    if (preamble != null) preamble.Write(t.Value);
+                } else if (t.Metadata.StartsWith("float_", StringComparison.InvariantCultureIgnoreCase)) {
                     if (nextFloat != null) errors.WriteLine("Unexpected float within float: " + t.Value);
                     else if (inFloat != null) errors.WriteLine("Unterminated float: " + inFloat);
                     nextFloat = null;
@@ -133,53 +137,39 @@ namespace WordExtractor
                     nextFloat.Write(t.Value);
                     inFloat = t.Metadata.Substring(6);
 
-                    if (knownFloats.Contains(inFloat) == false)
-                    {
+                    if (knownFloats.Contains(inFloat) == false) {
                         knownFloats.Add(inFloat);
-                        preamble.WriteLine();
-                        preamble.WriteLine("\\newcommand\\wxbegin" + inFloat + "[2]{\\begin{" + inFloat + "}\\caption{#1}\\label{#2}\\centering}");
-                        preamble.WriteLine("\\newcommand\\wxend" + inFloat + "{\\end{" + inFloat + "}}");
-                        preamble.WriteLine("\\crefname{{{0}}}{{{1}}}{{{0}s}}", inFloat, inFloat.Substring(0, 1).ToUpper() + inFloat.Substring(1).ToLower());
+                        if (preamble != null) {
+                            preamble.WriteLine();
+                            preamble.WriteLine("\\newcommand\\wxbegin" + inFloat + "[2]{\\begin{" + inFloat + "}\\caption{#1}\\label{#2}\\centering}");
+                            preamble.WriteLine("\\newcommand\\wxend" + inFloat + "{\\end{" + inFloat + "}}");
+                            preamble.WriteLine("\\crefname{{{0}}}{{{1}}}{{{0}s}}", inFloat, inFloat.Substring(0, 1).ToUpper() + inFloat.Substring(1).ToLower());
+                        }
                     }
-                }
-                else if (t.Metadata.Equals("label", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    if (nextFloat != null)
-                    {
+                } else if (t.Metadata.Equals("label", StringComparison.InvariantCultureIgnoreCase)) {
+                    if (nextFloat != null) {
                         inFloat += "_" + t.Value + ".tex";
 
-                        if (!OutputFiles.TryGetValue(inFloat, out target))
-                        {
+                        if (!OutputFiles.TryGetValue(inFloat, out target)) {
                             OutputFiles[inFloat] = target = new StringWriter();
                         }
                         document.WriteLine("\r\n% " + nextFloat.ToString().Replace("\r\n", "//") + "\r\n\\input{" + inFloat + "}");
 
                         target.Write(nextFloat.ToString());
                         target.Write("{" + t.Value + "}");
-                        if (inFloat.StartsWith("listing", StringComparison.InvariantCultureIgnoreCase))
-                        {
+                        if (inFloat.StartsWith("listing", StringComparison.InvariantCultureIgnoreCase)) {
                             InVerbatim = true;
                             target.Write("\r\n");
-                        }
-                        else if (inFloat.StartsWith("equation", StringComparison.InvariantCultureIgnoreCase))
-                        { }
-                        else
-                        {
+                        } else if (inFloat.StartsWith("equation", StringComparison.InvariantCultureIgnoreCase)) { } else {
                             target.Write("\r\n\r\n");
                         }
                         nextFloat = null;
-                    }
-                    else if (InVerbatim)
-                    {
+                    } else if (InVerbatim) {
                         target.Write("@\\label{" + t.Value + "}@");
-                    }
-                    else
-                    {
+                    } else {
                         target.Write("\\label{" + t.Value + "}");
                     }
-                }
-                else if (t.Metadata.Equals("end_float", StringComparison.InvariantCultureIgnoreCase))
-                {
+                } else if (t.Metadata.Equals("end_float", StringComparison.InvariantCultureIgnoreCase)) {
                     if (nextFloat != null) errors.WriteLine("Float terminated early: " + nextFloat.ToString());
                     else if (inFloat == null) errors.WriteLine("Unexpected float terminator");
                     else target.Write(t.Value);
@@ -188,11 +178,8 @@ namespace WordExtractor
                     inFloat = null;
                     InVerbatim = false;
                     target = document;
-                }
-                else if (t.Metadata.Equals("appendix", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    if (!inAppendices)
-                    {
+                } else if (t.Metadata.Equals("appendix", StringComparison.InvariantCultureIgnoreCase)) {
+                    if (!inAppendices) {
                         target.WriteLine("\\appendix");
                         inAppendices = true;
                     }
@@ -201,37 +188,30 @@ namespace WordExtractor
             }
         }
 
-        private IEnumerable<Token> DoConvert(IEnumerable<Token> source)
-        {
+        private IEnumerable<Token> DoConvert(IEnumerable<Token> source) {
             int skipEop = 0;
-            foreach (var t in source)
-            {
-                if (t.Metadata == "eop" && skipEop > 0)
-                {
+            foreach (var t in source) {
+                if (t.Metadata == "eop" && skipEop > 0) {
                     --skipEop;
                     continue;
                 }
 
                 var result = new Token(t);
 
-                if (t.Metadata == null)
-                {
+                if (t.Metadata == null) {
                     if (t.Value == null) continue;
                     if (!InVerbatim) foreach (var p in TextSubstitutions) result.Value = result.Value.Replace(p.Item1, p.Item2);
-                }
-                else if (Conversions.ContainsKey(t.Metadata)) result = Conversions[t.Metadata](t.Value);
+                } else if (Conversions.ContainsKey(t.Metadata)) result = Conversions[t.Metadata](t.Value);
                 else result = new Token("error", t.ToString());
 
-                if (t.Metadata != null && t.Metadata.StartsWith("math", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    if (result.Value == null) continue;
+                if (t.Metadata != null && t.Metadata.StartsWith("math", StringComparison.InvariantCultureIgnoreCase)) {
+                    if (result == null || result.Value == null) continue;
                     foreach (var p in MathSubstitutions) result.Value = result.Value.Replace(p.Item1, p.Item2);
                 }
 
                 if (result == null) continue;
 
-                if (!string.IsNullOrEmpty(result.Value) && result.Value.EndsWith("\\wxnobreak"))
-                {
+                if (!string.IsNullOrEmpty(result.Value) && result.Value.EndsWith("\\wxnobreak")) {
                     skipEop += 1;
                     result.Value = result.Value.Remove(result.Value.Length - 10);
                 }
@@ -245,6 +225,8 @@ namespace WordExtractor
             { "document", _ => new Token("\\begin{document}\r\n\\maketitle\r\n\r\n") },
             { "begin", text => new Token("\\begin{" + text + "}\r\n") },
             { "end", text => new Token("\\end{" + text + "}\r\n") },
+            { "wxbegin", text => new Token("\\wxbegin" + text + "\r\n") },
+            { "wxend", text => new Token("\\wxend" + text + "\r\n") },
             
             { "title", text => new Token("preamble", "\\title{" + text + "}\r\n") },
             { "author", text => new Token("preamble", "\\author{" + text + "}\r\n") },
@@ -294,26 +276,22 @@ namespace WordExtractor
 
         private int ParagraphStyleCount;
 
-        private Token ConvertParagraphStyle(string text)
-        {
+        private Token ConvertParagraphStyle(string text) {
             if (IgnoreParagraphStyles.Contains(text)) return null;
 
             ParagraphStyleCount += 1;
 
             var match = Regex.Match(text, "^Heading([0-9]+)$");
-            if (match != null)
-            {
+            if (match != null) {
                 int i = 0;
-                if (int.TryParse(match.Groups[1].Value, out i))
-                {
+                if (int.TryParse(match.Groups[1].Value, out i)) {
                     i += HeadingOffsetLevel - 1;
                     if (i < 4) return new Token(HeadingCommands[i]);
                     return new Token(text.ToLowerInvariant());
                 }
             }
 
-            if (text.Equals("appendix", StringComparison.CurrentCultureIgnoreCase))
-            {
+            if (text.Equals("appendix", StringComparison.CurrentCultureIgnoreCase)) {
                 return new Token("appendix", HeadingCommands[HeadingOffsetLevel]);
             }
 
@@ -321,15 +299,13 @@ namespace WordExtractor
             return null;
         }
 
-        private Token ConvertEndOfParagraph(string text)
-        {
+        private Token ConvertEndOfParagraph(string text) {
             var nl = InVerbatim ? "\r\n" : "\r\n\r\n";
             if (ParagraphStyleCount > 0) { ParagraphStyleCount -= 1; return new Token("}" + nl); }
             return new Token(nl);
         }
 
-        private static Token ConvertRunStyle(string text)
-        {
+        private static Token ConvertRunStyle(string text) {
             var style = "";
             if (text.IndexOf("monospace", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\texttt{";
             if (text.IndexOf("strong", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\textbf{";
@@ -341,80 +317,59 @@ namespace WordExtractor
             return new Token(style);
         }
 
-        private static Token ConvertEndRunStyle(string text)
-        {
+        private static Token ConvertEndRunStyle(string text) {
             var style = ConvertRunStyle(text);
             if (style == null) return null;
             int styles = style.Value.Count(c => c == '{');
             return new Token(new String('}', styles));
         }
 
-        private static Token ConvertList(string text)
-        {
+        private static Token ConvertList(string text) {
             if (text.IndexOf("bullet", StringComparison.InvariantCultureIgnoreCase) >= 0) return new Token("\\begin{itemize}\r\n");
             if (text.IndexOf("decimal", StringComparison.InvariantCultureIgnoreCase) >= 0) return new Token("\\begin{enumerate}\r\n");
             return new Token((string)null);
         }
 
-        private static Token ConvertEndList(string text)
-        {
+        private static Token ConvertEndList(string text) {
             if (text.IndexOf("bullet", StringComparison.InvariantCultureIgnoreCase) >= 0) return new Token("\\end{itemize}\r\n");
             if (text.IndexOf("decimal", StringComparison.InvariantCultureIgnoreCase) >= 0) return new Token("\\end{enumerate}\r\n");
             return new Token((string)null);
         }
 
-        private static Token ConvertMathPara(string text)
-        {
-            if (text.EndsWith("."))
-            {
+        private static Token ConvertMathPara(string text) {
+            if (text.EndsWith(".")) {
                 text = text.Remove(text.Length - 1);
                 return new Token("$$" + text + "$$.");
             }
             return new Token("$$" + text + "$$\r\n\\noindent{}\\wxnobreak");
         }
 
-        private static Token ConvertFloat(string text)
-        {
-            if (text.IndexOf("listing_", StringComparison.InvariantCultureIgnoreCase) == 0)
-            {
+        private static Token ConvertFloat(string text) {
+            if (text.IndexOf("listing_", StringComparison.InvariantCultureIgnoreCase) == 0) {
                 var language = text.Substring(text.IndexOf('_') + 1);
-                if (KnownListingLanguages.Contains(language))
-                {
+                if (KnownListingLanguages.Contains(language)) {
                     return new Token("float_listing", "\\wxbegin" + language + "{");
-                }
-                else
-                {
+                } else {
                     return new Token("float_listing", "\\wxbeginlisting{");
                 }
-            }
-            else
-            {
+            } else {
                 return new Token("float_" + text, "\\wxbegin" + text + "{");
             }
         }
 
-        private static Token ConvertEndFloat(string text)
-        {
-            if (text.IndexOf("listing_", StringComparison.InvariantCultureIgnoreCase) == 0)
-            {
+        private static Token ConvertEndFloat(string text) {
+            if (text.IndexOf("listing_", StringComparison.InvariantCultureIgnoreCase) == 0) {
                 var language = text.Substring(text.IndexOf('_') + 1);
-                if (KnownListingLanguages.Contains(language))
-                {
+                if (KnownListingLanguages.Contains(language)) {
                     return new Token("end_float", "\\end{" + language + "}\\wxend" + language + "\r\n");
-                }
-                else
-                {
+                } else {
                     return new Token("end_float", "\\end{verbatim}\\wxendlisting\r\n");
                 }
-            }
-            else if (text.Equals("listing", StringComparison.InvariantCultureIgnoreCase))
-            {
+            } else if (text.Equals("listing", StringComparison.InvariantCultureIgnoreCase)) {
                 return new Token("end_float", "\\end{verbatim}\\wxendlisting\r\n");
-            }
-            else
-            {
+            } else {
                 return new Token("end_float", "\\wxend" + text + "\r\n");
             }
-       }
+        }
     }
 }

@@ -27,6 +27,7 @@
 \usepackage{graphicx}
 \usepackage{multirow}
 \usepackage{dcolumn}
+\usepackage{xfrac}
 
 %------------------------------------------------------------------------------
 
@@ -124,6 +125,9 @@
 \bibliographystyle{IEEEtran}
 
 %-----------------------------------------------------------------------
+
+\newcommand\wxbeginabstract{\begin{abstract}}
+\newcommand\wxendabstract{\end{abstract}}
 
 \newcommand\wxbeginequation[2]{\begin{equation}\label{#2}}
 \newcommand\wxendequation{\end{equation}}
