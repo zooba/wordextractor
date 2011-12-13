@@ -147,7 +147,7 @@ namespace WordExtractor
             if (UpTo > 4) return;
 
             DetectCodeListings();
-            UseNiceReferenceNames();
+            //UseNiceReferenceNames();
             CombineReferences();
             CombineCitations();
 

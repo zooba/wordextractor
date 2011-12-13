@@ -1,10 +1,6 @@
 ﻿×	\times 
 ÷	\div 
 ⋅	\cdot 
- 	~
-0x2002	\:
-0x2003	\;
-0x2006	\,
 &lt;	<
 &gt;	>
 \mathbit	

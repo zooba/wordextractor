@@ -127,7 +127,13 @@
   <data name="MathSubstitutions" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\MathSubstitutions.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="MathUnicodeSubstitutions" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\resources\mathunicodesubstitutions.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
   <data name="TextSubstitutions" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\TextSubstitutions.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="UnicodeSubstitutions" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\resources\unicodesubstitutions.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
 </root>

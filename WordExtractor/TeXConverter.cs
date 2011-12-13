@@ -22,6 +22,9 @@ namespace WordExtractor
 
         public DirectoryInfo Destination { get; set; }
 
+        private bool AsChapter;
+        private bool ForXetex;
+
         private IDictionary<string, Func<string, Token>> Conversions;
         private List<Tuple<string, string>> TextSubstitutions;
         private List<Tuple<string, string>> MathSubstitutions;
@@ -33,9 +36,10 @@ namespace WordExtractor
             { "pseudocode", "pseudocode" }
         };
 
-        public TeXConverter(IEnumerable<Token> source, bool asChapter) {
+        public TeXConverter(IEnumerable<Token> source, bool asChapter, bool forXetex) {
             Tokens = source.ToList();
             AsChapter = asChapter;
+            ForXetex = forXetex;
             HeadingOffsetLevel = asChapter ? 0 : 1;
 
             OutputFiles = new Dictionary<string, TextWriter>();
@@ -57,29 +61,25 @@ namespace WordExtractor
             }
 
             // Initialise substitutions lists
-            TextSubstitutions = new List<Tuple<string, string>>();
-            {
-                var reader = new System.IO.StringReader(Properties.Resources.TextSubstitutions);
-                for (var line = reader.ReadLine(); line != null; line = reader.ReadLine()) {
-                    var parts = line.Split('\t');
-                    var first = parts[0];
-                    if (first.StartsWith("0x")) first = char.ConvertFromUtf32(Convert.ToInt32(first.Substring(2), 16));
-                    var second = parts[1];
-                    TextSubstitutions.Add(new Tuple<string, string>(first, second));
-                }
+            TextSubstitutions = ReadSubstitutions(Properties.Resources.TextSubstitutions);
+            MathSubstitutions = ReadSubstitutions(Properties.Resources.MathSubstitutions);
+            if (!ForXetex) {
+                TextSubstitutions.AddRange(ReadSubstitutions(Properties.Resources.UnicodeSubstitutions));
+                MathSubstitutions.AddRange(ReadSubstitutions(Properties.Resources.MathUnicodeSubstitutions));
             }
+        }
 
-            MathSubstitutions = new List<Tuple<string, string>>();
-            {
-                var reader = new System.IO.StringReader(Properties.Resources.MathSubstitutions);
-                for (var line = reader.ReadLine(); line != null; line = reader.ReadLine()) {
-                    var parts = line.Split('\t');
-                    var first = parts[0];
-                    if (first.StartsWith("0x")) first = char.ConvertFromUtf32(Convert.ToInt32(first.Substring(2), 16));
-                    var second = parts[1];
-                    MathSubstitutions.Add(new Tuple<string, string>(first, second));
-                }
+        private List<Tuple<string, string>> ReadSubstitutions(string source) {
+            var result = new List<Tuple<string, string>>();
+            var reader = new System.IO.StringReader(source);
+            for (var line = reader.ReadLine(); line != null; line = reader.ReadLine()) {
+                var parts = line.Split('\t');
+                var first = parts[0];
+                if (first.StartsWith("0x")) first = char.ConvertFromUtf32(Convert.ToInt32(first.Substring(2), 16));
+                var second = parts[1];
+                result.Add(new Tuple<string, string>(first, second));
             }
+            return result;
         }
 
         /// <summary>
@@ -88,7 +88,6 @@ namespace WordExtractor
         /// </summary>
         public int HeadingOffsetLevel { get; set; }
 
-        private bool AsChapter;
         private bool InVerbatim;
 
         public void Run(TextWriter errors = null) {

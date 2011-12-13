@@ -59,9 +59,11 @@ namespace WordExtractor
                 var outName = ArgsRead(args, "name", "[a-zA-Z0-9_]+") ?? "document";
                 var overwrite = ArgsHas(args, "over(write)?");
                 var asChapter = ArgsHas(args, "chapter");
+                var forXetex = ArgsHas(args, "xe(la)?tex");
 
-                Console.OutputEncoding = Encoding.ASCII;
-                var tex = new TeXConverter(simplifier.Document, asChapter);
+                //Console.OutputEncoding = Encoding.ASCII;
+                var encoding = forXetex ? Encoding.Unicode : Encoding.ASCII;
+                var tex = new TeXConverter(simplifier.Document, asChapter, forXetex);
 
                 tex.DocumentKey = outName + ".tex";
                 tex.Run(Console.Error);
@@ -72,7 +74,7 @@ namespace WordExtractor
                     if (File.Exists(dest) && !overwrite && p.Key != tex.DocumentKey) {
                         Console.Error.WriteLine("Not overwriting: " + dest);
                     } else {
-                        using (var file = new StreamWriter(dest, false, Encoding.ASCII)) {
+                        using (var file = new StreamWriter(dest, false, encoding)) {
                             file.Write(p.Value.ToString());
                         }
                     }

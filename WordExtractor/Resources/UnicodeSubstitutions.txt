@@ -1,0 +1,39 @@
+﻿‘	`
+’	'
+“	``
+”	''
+©	\textcopyright{}
+®	\textregistered{}
+™	\texttrademark{}
+…	\textellipsis{}
+–	\textendash{}
+‒	\textendash{}			# Figure dash
+—	\textemdash{}
+0x200B	{}				# Zero-width space
+0x00A0	~				# Non-breaking space
+0x00AD	\-				# Soft hyphen
+à	\`{a}
+á	\'{a}
+â	\^{a}
+ã	\~{a}
+ä	\"{a}
+å	\aa{}
+æ	\ae{}
+ç	\c{c}
+è	\`{e}
+é	\'{e}
+ê	\^{e}
+ë	\"{e}
+ì	\`{\i}
+í	\'{\i}
+î	\^{\i}
+ï	\"{\i}
+ñ	\~{n}
+ò	\`{o}
+ö	\"{o}
+ù	\`{u}
+ú	\'{u}
+û	\^{u}
+ü	\"{u}
+ý	\'{y}
+ÿ	\"{y}
