@@ -355,7 +355,7 @@ namespace WordExtractor
                 if (KnownListingLanguages.TryGetValue(language, out language)) {
                     return new Token("float_listing", "\\wxbeginlisting{" + language + "}{}{");
                 } else {
-                    return new Token("float_listing", "\\wxbeginlisting{lstlisting}{}{");
+                    return new Token("float_listing", "\\wxbeginlisting{unknownlanguage}{}{");
                 }
             } else {
                 return new Token("float_" + text, "\\wxbegin" + text + "{");
@@ -368,10 +368,10 @@ namespace WordExtractor
                 if (KnownListingLanguages.TryGetValue(language, out language)) {
                     return new Token("end_float", "\\end{" + language + "}\\wxendlisting\r\n");
                 } else {
-                    return new Token("end_float", "\\end{lstlisting}\\wxendlisting\r\n");
+                    return new Token("end_float", "\\end{unknownlanguage}\\wxendlisting\r\n");
                 }
             } else if (text.Equals("listing", StringComparison.InvariantCultureIgnoreCase)) {
-                return new Token("end_float", "\\end{lstlisting}\\wxendlisting\r\n");
+                return new Token("end_float", "\\end{unknownlanguage}\\wxendlisting\r\n");
             } else {
                 return new Token("end_float", "\\wxend" + text + "\r\n");
             }

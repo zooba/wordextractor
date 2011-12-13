@@ -12,6 +12,8 @@ $	\$
 }	\}
 _	\_
 \*	*
+>>	>{}>
+<<	<{}<
 ©	\textcopyright{}
 ®	\textregistered{}
 ™	\texttrademark{}
