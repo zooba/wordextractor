@@ -822,6 +822,8 @@ namespace WordExtractor
             }
         }
 
+        private HashSet<string> UsedUnreferencedNames = new HashSet<string>();
+
         private void ConvertCaptions() {
             // Named (referenced) floats
             var code = "para_style:Caption | bookmark_start:* ! seq:* bookmark_end:* ! eop:*";
@@ -857,7 +859,19 @@ namespace WordExtractor
                 }
 
                 c.End.Value.Metadata = "end_caption";
-                c.List.AddAfter(c.End, new Token("label", "unreferenced" + c.End.GetHashCode().ToString("X8")));
+                var niceName = NiceNameFromCaption(c.Start.Next);
+                if (UsedUnreferencedNames.Contains(niceName)) {
+                    Warnings.WriteLine("Caption {0} occurs multiple times.", niceName);
+                    for (int i = 1; i < int.MaxValue; ++i) {
+                        var newName = niceName + i.ToString();
+                        if (!UsedUnreferencedNames.Contains(newName)) {
+                            niceName = newName;
+                            break;
+                        }
+                    }
+                }
+                UsedUnreferencedNames.Add(niceName);
+                c.List.AddAfter(c.End, new Token("label", niceName));
             }
         }
 
