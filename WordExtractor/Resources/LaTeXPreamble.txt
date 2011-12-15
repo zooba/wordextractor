@@ -26,6 +26,7 @@
 \usepackage{url}
 \usepackage{graphicx}
 \usepackage{multirow}
+\usepackage{tabulary}
 \usepackage{dcolumn}
 \usepackage{xfrac}
 

@@ -265,8 +265,8 @@ namespace WordExtractor
             { "math", text => new Token("$" + text + "$") },
             { "math_para", ConvertMathPara },
 
-            { "table", text => new Token("\\begin{tabular}{" + text + "}\r\n\\hline\r\n") },
-            { "end_table", _ => new Token("\\end{tabular}\r\n") },
+            { "table", text => new Token("\\begin{tabulary}{\\columnwidth}{" + text + "}\r\n\\hline\r\n") },
+            { "end_table", _ => new Token("\\end{tabulary}\r\n") },
             { "end_table_col", _ => new Token(" & ") },
             { "end_table_row", _ => new Token(" \\\\ \\hline\r\n") },
 

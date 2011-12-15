@@ -817,7 +817,7 @@ namespace WordExtractor
 
             var code = "table:* table_def_col:*";
             for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code)) {
-                c.Start.Value.Value = (c.Start.Value.Value ?? "|") + "l|";
+                c.Start.Value.Value = (c.Start.Value.Value ?? "|").ToLowerInvariant() + "L|";
                 c.End.Remove();
             }
         }
