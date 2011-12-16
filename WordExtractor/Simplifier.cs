@@ -730,7 +730,7 @@ namespace WordExtractor
                     if (c.Start.Value.Value.StartsWith("heading", StringComparison.InvariantCultureIgnoreCase)) {
                         if (c.Mark.Value.Value.StartsWith("appendix", StringComparison.CurrentCultureIgnoreCase)) {
                             c.Start.Value.Value = "Appendix";
-                            var match = Regex.Match(c.Mark.Value.Value, @"appendix.+?(\:|\.) *(.+)", RegexOptions.IgnoreCase);
+                            var match = Regex.Match(c.Mark.Value.Value, @"appendix.*?(\:|\.) *(.+)", RegexOptions.IgnoreCase);
                             if (match != null && match.Groups.Count == 3) {
                                 c.Mark.Value.Value = match.Groups[2].Value;
                             }
@@ -860,6 +860,9 @@ namespace WordExtractor
 
                 c.End.Value.Metadata = "end_caption";
                 var niceName = NiceNameFromCaption(c.Start.Next);
+                if (string.IsNullOrWhiteSpace(niceName)) {
+                    niceName = Guid.NewGuid().ToString("N");
+                }
                 if (UsedUnreferencedNames.Contains(niceName)) {
                     Warnings.WriteLine("Caption {0} occurs multiple times.", niceName);
                     for (int i = 1; i < int.MaxValue; ++i) {
