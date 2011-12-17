@@ -32,6 +32,7 @@ namespace WordExtractor
         private static readonly Dictionary<string, string> KnownListingLanguages = new Dictionary<string, string> { 
             { "python", "python" },
             { "esdl", "esdl" }, 
+            { "ruby", "ruby" }, 
             { "c++", "cpp" },
             { "pseudocode", "pseudocode" }
         };
