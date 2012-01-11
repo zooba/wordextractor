@@ -130,6 +130,8 @@
 \newcommand\wxbeginabstract{\begin{abstract}}
 \newcommand\wxendabstract{\end{abstract}}
 
+\newcommand\wxnotes[1]{\colorbox{yellow}{\textbf #1}}
+
 \newcommand\wxbeginequation[2]{\begin{equation}\label{#2}}
 \newcommand\wxendequation{\end{equation}}
 \crefformat{equation}{(#2#1#3)}

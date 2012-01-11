@@ -318,6 +318,7 @@ namespace WordExtractor
             if (text.IndexOf("small", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\textsc{";
             if (text.IndexOf("superscript", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\textsuperscript{";
             if (text.IndexOf("subscript", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\textsubscript{";
+            if (text.IndexOf("notes", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\wxnotes{";
             if (string.IsNullOrEmpty(style)) return null;
             return new Token(style);
         }
@@ -350,7 +351,7 @@ namespace WordExtractor
         }
 
         private static Token ConvertFloat(string text) {
-            if (text.IndexOf("listing_", StringComparison.InvariantCultureIgnoreCase) == 0) {
+            if (text.IndexOf("listing", StringComparison.InvariantCultureIgnoreCase) == 0) {
                 var language = text.Substring(text.IndexOf('_') + 1);
                 if (KnownListingLanguages.TryGetValue(language, out language)) {
                     return new Token("float_listing", "\\wxbeginlisting{" + language + "}{}{");
@@ -363,7 +364,7 @@ namespace WordExtractor
         }
 
         private static Token ConvertEndFloat(string text) {
-            if (text.IndexOf("listing_", StringComparison.InvariantCultureIgnoreCase) == 0) {
+            if (text.IndexOf("listing", StringComparison.InvariantCultureIgnoreCase) == 0) {
                 var language = text.Substring(text.IndexOf('_') + 1);
                 if (KnownListingLanguages.TryGetValue(language, out language)) {
                     return new Token("end_float", "\\end{" + language + "}\\wxendlisting\r\n");
