@@ -968,12 +968,25 @@ namespace WordExtractor
         private void DetectCodeListings() {
             var code = "float:listing ! | end_caption:* !float:* end_float:listing";
             var regex1 = new Regex("(in|using|with) ([A-Za-z+]+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            var regex2 = new Regex("^([A-Za-z+]+) ", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            var regex2 = new Regex("([A-Za-z+]+) (code|function|method|script)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            var regex3 = new Regex("^([A-Za-z+]+) ", RegexOptions.Compiled | RegexOptions.IgnoreCase);
             foreach (var c in Find(code)) {
                 var match1 = c.Mark.Previous.Value.Metadata == null ? regex1.Match(c.Mark.Previous.Value.Value) : null;
-                var match2 = c.Start.Next.Value.Metadata == null ? regex2.Match(c.Start.Next.Value.Value) : null;
+                Match match2 = null;
+                for (var node = c.Start.Next; node != c.Mark && match2 == null; node = node.Next) {
+                    if (node.Value == null || node.Value.Metadata != null){
+                        continue;
+                    }
+                    match2 = regex2.Match(c.Start.Next.Value.Value);
+                    if (match2 != null && match2.Success == false) {
+                        match2 = null;
+                    }
+                }
+                var match3 = c.Start.Next.Value.Metadata == null ? regex3.Match(c.Start.Next.Value.Value) : null;
                 if (match1 != null && match1.Success) {
                     c.Start.Value.Value = c.End.Value.Value = "listing_" + match1.Groups[2].Value.ToLower();
+                } else if (match2 != null && match2.Success) {
+                    c.Start.Value.Value = c.End.Value.Value = "listing_" + match2.Groups[1].Value.ToLower();
                 } else if (match2 != null && match2.Success) {
                     c.Start.Value.Value = c.End.Value.Value = "listing_" + match2.Groups[1].Value.ToLower();
                 }

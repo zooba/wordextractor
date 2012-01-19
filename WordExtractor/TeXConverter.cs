@@ -170,7 +170,11 @@ namespace WordExtractor
                         }
                         nextFloat = null;
                     } else if (InVerbatim) {
-                        target.Write("@\\label{" + t.Value + "}@");
+                        if (ForXetex) {
+                            target.Write("¶\\label{" + t.Value + "}¶");
+                        } else {
+                            target.Write("@\\label{" + t.Value + "}@");
+                        }
                     } else {
                         target.Write("\\label{" + t.Value + "}");
                     }
