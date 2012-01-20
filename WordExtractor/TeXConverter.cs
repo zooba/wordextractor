@@ -29,14 +29,6 @@ namespace WordExtractor
         private List<Tuple<string, string>> TextSubstitutions;
         private List<Tuple<string, string>> MathSubstitutions;
 
-        private static readonly Dictionary<string, string> KnownListingLanguages = new Dictionary<string, string> { 
-            { "python", "python" },
-            { "esdl", "esdl" }, 
-            { "ruby", "ruby" }, 
-            { "c++", "cpp" },
-            { "pseudocode", "pseudocode" }
-        };
-
         public TeXConverter(IEnumerable<Token> source, bool asChapter, bool forXetex) {
             Tokens = source.ToList();
             AsChapter = asChapter;
@@ -356,12 +348,8 @@ namespace WordExtractor
 
         private static Token ConvertFloat(string text) {
             if (text.IndexOf("listing", StringComparison.InvariantCultureIgnoreCase) == 0) {
-                var language = text.Substring(text.IndexOf('_') + 1);
-                if (KnownListingLanguages.TryGetValue(language, out language)) {
-                    return new Token("float_listing", "\\wxbeginlisting{" + language + "}{}{");
-                } else {
-                    return new Token("float_listing", "\\wxbeginlisting{unknownlanguage}{}{");
-                }
+                var language = text.Substring(text.IndexOf('_') + 1).ToLower();
+                return new Token("float_listing", "\\wxbeginlisting{" + language + "}{}{");
             } else {
                 return new Token("float_" + text, "\\wxbegin" + text + "{");
             }
@@ -369,12 +357,8 @@ namespace WordExtractor
 
         private static Token ConvertEndFloat(string text) {
             if (text.IndexOf("listing", StringComparison.InvariantCultureIgnoreCase) == 0) {
-                var language = text.Substring(text.IndexOf('_') + 1);
-                if (KnownListingLanguages.TryGetValue(language, out language)) {
-                    return new Token("end_float", "\\end{" + language + "}\\wxendlisting\r\n");
-                } else {
-                    return new Token("end_float", "\\end{unknownlanguage}\\wxendlisting\r\n");
-                }
+                var language = text.Substring(text.IndexOf('_') + 1).ToLower();
+                return new Token("end_float", "\\end{" + language + "}\\wxendlisting\r\n");
             } else if (text.Equals("listing", StringComparison.InvariantCultureIgnoreCase)) {
                 return new Token("end_float", "\\end{unknownlanguage}\\wxendlisting\r\n");
             } else {
