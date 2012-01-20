@@ -987,8 +987,8 @@ namespace WordExtractor
                     c.Start.Value.Value = c.End.Value.Value = "listing_" + match1.Groups[2].Value.ToLower();
                 } else if (match2 != null && match2.Success) {
                     c.Start.Value.Value = c.End.Value.Value = "listing_" + match2.Groups[1].Value.ToLower();
-                } else if (match2 != null && match2.Success) {
-                    c.Start.Value.Value = c.End.Value.Value = "listing_" + match2.Groups[1].Value.ToLower();
+                } else if (match3 != null && match3.Success) {
+                    c.Start.Value.Value = c.End.Value.Value = "listing_" + match3.Groups[1].Value.ToLower();
                 }
             }
         }
