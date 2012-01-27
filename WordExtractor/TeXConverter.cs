@@ -210,7 +210,12 @@ namespace WordExtractor
                     foreach (var p in MathSubstitutions) result.Value = result.Value.Replace(p.Item1, p.Item2);
                 }
 
-                if (result == null) continue;
+                if (result == null) {
+                    if (t != null && t.Metadata != null && !Conversions.ContainsKey(t.Metadata)) {
+                        Console.WriteLine("Unhandled token: " + t.Metadata);
+                    }
+                    continue;
+                }
 
                 if (!string.IsNullOrEmpty(result.Value) && result.Value.EndsWith("\\wxnobreak")) {
                     skipEop += 1;
@@ -238,6 +243,8 @@ namespace WordExtractor
             { "label", text => new Token("label", text.Trim('_', ' ', '.')) },
             
             { "pagebreak", _ => new Token("\\pagebreak\r\n") },
+            { "sectionbreak", _ => new Token("\\clearpage\\newpage\r\n") },
+            { "oddsectionbreak", _ => new Token("\\cleardoublepage\\newpage\r\n") },
             { "linebreak", _ => new Token("\r\n") },
             { "hspace", _ => new Token("\\hspace{5mm}") },
             

@@ -422,6 +422,22 @@ namespace WordExtractor
                 c.Start.Value.Value = null;
                 c.Start.Next.RemoveTo(c.End);
             }
+
+            code = "S<:sectPr !S>:sectPr S<:type Sa:val S=:oddPage ! S>:sectPr";
+
+            foreach (var c in Find(code)) {
+                c.Start.Value.Metadata = "oddsectionbreak";
+                c.Start.Value.Value = null;
+                c.Start.Next.RemoveTo(c.End);
+            }            
+            
+            code = "S<:sectPr ! S>:sectPr";
+
+            foreach (var c in Find(code)) {
+                c.Start.Value.Metadata = "sectionbreak";
+                c.Start.Value.Value = null;
+                c.Start.Next.RemoveTo(c.End);
+            }
         }
 
         private void RemoveRSIDAttributes() {
@@ -644,12 +660,12 @@ namespace WordExtractor
                 "S<:rPr !S>:rPr | S<:szCs ! S>:szCs",
                 "S<:pPr !S>:pPr | S<:jc ! S>:jc",
                 "S<:pPr !S>:pPr | S<:ind ! S>:ind",
-                "S<:sectPr ! S>:sectPr",
                 "S<:lang ! S>:lang",
                 "S<:proofErr ! S>:proofErr",
                 "S<:numForm ! S>:numForm",
                 "S<:highlight ! S>:highlight",
                 "S<:cnfStyle ! S>:cnfStyle",
+                "S<:spacing ! S>:spacing",
             };
 
             foreach (var code in codes) {

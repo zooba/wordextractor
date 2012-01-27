@@ -4,3 +4,25 @@
 &lt;	<
 &gt;	>
 \mathbit	
+⇐	\Leftarrow
+⇒	\Rightarrow
+⇑	\Uparrow
+⇓	\Downarrow
+⇔	\Leftrightarrow
+⇕	\Updownarrow
+⇖	\Nwarrow
+⇗	\Nearrow
+⇘	\Searrow
+⇙	\Swarrow
+⇚	\Lleftarrow
+⇛	\Rrightarrow
+←	\leftarrow
+↑	\uparrow
+→	\rightarrow
+↓	\downarrow
+↔	\leftrightarrow
+↕	\updownarrow
+↖	\nwarrow
+↗	\nearrow
+↘	\searrow
+↙	\swarrow
