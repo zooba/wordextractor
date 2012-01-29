@@ -24,6 +24,7 @@ namespace WordExtractor
         private LinkedList<Token> NumberingTokens;
 
         private Dictionary<string, string> NiceReferenceNames;
+        private HashSet<string> IgnoredBookmarks;
 
         public IEnumerable<Token> Document { get { return DocumentTokens.AsEnumerable(); } }
 
@@ -35,6 +36,7 @@ namespace WordExtractor
             FootnoteRelsTokens = new LinkedList<Token>(reader.FootnotesRels);
             NumberingTokens = new LinkedList<Token>(reader.Numbering);
             NiceReferenceNames = new Dictionary<string, string>();
+            IgnoredBookmarks = new HashSet<string>();
             UpTo = 0;
             Warnings = warnings;
         }
@@ -325,6 +327,12 @@ namespace WordExtractor
                 c2.Mark.Value.Metadata = "bookmark_end";
                 c2.Mark.Value.Value = name;
                 c2.Start.Next.RemoveTo(c2.End);
+
+                if (!name.StartsWith("_Ref")) {
+                    IgnoredBookmarks.Add(name);
+                    c.Start.Remove();
+                    c2.Mark.Remove();
+                }
             }
 
             ReplaceSequence(DocumentTokens.First, "bookmark_start:_GoBack bookmark_end:_GoBack", "");
@@ -574,7 +582,7 @@ namespace WordExtractor
                 command = command.Substring(0, command.IndexOf(' ')).ToUpperInvariant();
                 var firstOption = (options.Contains(' ')) ? (options.Substring(0, options.IndexOf(' '))) : options;
 
-                if (command == "CITATION" || command == "SEQ" || command == "REF") {
+                if (command == "CITATION" || command == "SEQ") {
                     c.Start.Value.Metadata = command.ToLowerInvariant();
                     c.Start.Value.Value = firstOption;
                     c.Start.Next.RemoveTo(c.End);
@@ -582,6 +590,20 @@ namespace WordExtractor
                     c.Start.Value.Metadata = command.ToLowerInvariant();
                     c.Start.Value.Value = options.Trim(' ', '"', '\'');
                     c.Start.Next.RemoveTo(c.End);
+                } else if (command == "REF") {
+                    if (IgnoredBookmarks.Contains(firstOption)) {
+                        while (c.Start.Next != null && c.Start.Next.Value.Metadata != "field_separate") {
+                            c.Start.Next.Remove();
+                        }
+                        c.Start.Next.Remove();
+                        c.Start.Remove();
+                        c.End.Remove();
+                        command = null;
+                    } else {
+                        c.Start.Value.Metadata = command.ToLowerInvariant();
+                        c.Start.Value.Value = firstOption;
+                        c.Start.Next.RemoveTo(c.End);
+                    }
                 } else {
                     Debug.WriteLine("Unhandled field: " + command);
                 }
@@ -694,6 +716,22 @@ namespace WordExtractor
             foreach (var c in Find(code)) {
                 c.List.Remove(c.Start);
                 c.List.Remove(c.End);
+            }
+
+            code = "run_style:* field_begin:* end_run_style:*";
+            foreach (var c in Find(code)) {
+                c.Start.Remove();
+                c.End.Remove();
+            }
+            code = "run_style:* field_separate:* end_run_style:*";
+            foreach (var c in Find(code)) {
+                c.Start.Remove();
+                c.End.Remove();
+            }
+            code = "run_style:* field_end:* end_run_style:*";
+            foreach (var c in Find(code)) {
+                c.Start.Remove();
+                c.End.Remove();
             }
         }
 
