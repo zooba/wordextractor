@@ -7,7 +7,6 @@
 ™	\texttrademark{}
 …	\textellipsis{}
 –	\textendash{}
-‒	\textendash{}			# Figure dash
 —	\textemdash{}
 0x200B	{}				# Zero-width space
 0x00A0	~				# Non-breaking space

@@ -321,6 +321,7 @@ namespace WordExtractor
             if (text.IndexOf("small", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\textsc{";
             if (text.IndexOf("superscript", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\textsuperscript{";
             if (text.IndexOf("subscript", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\textsubscript{";
+            if (text.IndexOf("title", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\wxtitle{";
             if (text.IndexOf("notes", StringComparison.CurrentCultureIgnoreCase) >= 0) style += "\\wxnotes{";
             if (string.IsNullOrEmpty(style)) return null;
             return new Token(style);

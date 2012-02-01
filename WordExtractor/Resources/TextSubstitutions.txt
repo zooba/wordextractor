@@ -13,3 +13,4 @@ _	\_
 <<	<{}<
 \textbackslash	\textbackslash{}
 \textgrave	\`{}
+‒	\textendash{}			# Figure dash
