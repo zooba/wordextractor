@@ -119,9 +119,9 @@ namespace WordExtractor
             ConvertStylesToEnvironments();
             ConvertBookmarksToLabels();
 
-            CombineNumberedLists();
-
             TidyFootnotes();
+
+            CombineNumberedLists();
 
             TidyDocumentStartEnd();
 
@@ -152,6 +152,8 @@ namespace WordExtractor
             //UseNiceReferenceNames();
             CombineReferences();
             CombineCitations();
+
+            //WrapDottedNames();
 
             UpTo = 5;
         }
@@ -1020,11 +1022,11 @@ namespace WordExtractor
         }
 
         private static readonly Dictionary<string, string> KnownListingLanguages = new Dictionary<string, string> { 
-            { "python", "python" },
-            { "esdl", "esdl" }, 
-            { "ruby", "ruby" }, 
-            { "c++", "cpp" },
-            { "pseudocode", "pseudocode" }
+            { "python ", "python" },
+            { "esdl ", "esdl" }, 
+            { "ruby ", "ruby" }, 
+            { "c++ ", "cpp" },
+            { "pseudocode ", "pseudocode" }
         };
 
         private void DetectCodeListings() {
@@ -1038,8 +1040,11 @@ namespace WordExtractor
                     caption += node.Value.Value;
                 }
 
+                caption = caption.Replace(',', ' ').Replace('.', ' ') + " ";
                 var language = KnownListingLanguages
-                    .Where(p => caption.IndexOf(p.Key, StringComparison.CurrentCultureIgnoreCase) >= 0)
+                    .Select(p => new { Value=p.Value, Index=caption.IndexOf(p.Key, StringComparison.CurrentCultureIgnoreCase) })
+                    .Where(p => p.Index >= 0)
+                    .OrderBy(p => p.Index)
                     .Select(p => p.Value)
                     .FirstOrDefault() ?? "unknownlanguage";
 
@@ -1080,5 +1085,23 @@ namespace WordExtractor
                 }
             }
         }
+
+        private void WrapDottedNames() {
+            var dotsInWords = new Regex(@"(\p{Ll}|\p{Lu})\.(\p{Ll}|\p{Lu})");
+            
+            for (var node = DocumentTokens.First; node != null; node = node.Next) {
+                if (node == null || node.Value == null ||
+                    node.Value.Metadata != null || node.Value.Value == null)
+                    continue;
+
+                node.Value.Value = dotsInWords.Replace(node.Value.Value, WrapDottedNames_Match);
+            }
+        }
+
+        public static string WrapDottedNames_Match(Match m) {
+            //return m.Groups[1].Value + ".\u200b" + m.Groups[2].Value;
+            return m.Groups[1].Value + ".\u00ad" + m.Groups[2].Value;
+        }
+
     }
 }

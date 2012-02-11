@@ -9,8 +9,18 @@ $	\$
 _	\_
 ^	\textasciicircum{}
 \*	*
+©	\textcopyright{}
+®	\textregistered{}
+™	\texttrademark{}
+…	\textellipsis{}
+–	\textendash{}
+—	\textemdash{}
+0x200B	{}				# Zero-width space
+0x00A0	~				# Non-breaking space
+0x00AD	\-				# Soft hyphen
 >>	>{}>
 <<	<{}<
+--	-{}-
 LaTeX	\LaTeX{}
 \textbackslash	\textbackslash{}
 \textgrave	\`{}
