@@ -1023,11 +1023,11 @@ namespace WordExtractor
         }
 
         private static readonly Dictionary<string, string> KnownListingLanguages = new Dictionary<string, string> { 
-            { "python ", "python" },
-            { "esdl ", "esdl" }, 
-            { "ruby ", "ruby" }, 
-            { "c++ ", "cpp" },
-            { "pseudocode ", "pseudocode" }
+            { "python", "python" },
+            { "esdl", "esdl" }, 
+            { "ruby", "ruby" }, 
+            { "c++", "cpp" },
+            { "pseudocode", "pseudocode" }
         };
 
         private void DetectCodeListings() {
@@ -1043,6 +1043,7 @@ namespace WordExtractor
 
                 caption = caption.Replace(',', ' ').Replace('.', ' ') + " ";
                 var language = KnownListingLanguages
+                    .SelectMany(p => " ,.)".Select(x => new KeyValuePair<string, string>(p.Key + x, p.Value)))
                     .Select(p => new { Value=p.Value, Index=caption.IndexOf(p.Key, StringComparison.CurrentCultureIgnoreCase) })
                     .Where(p => p.Index >= 0)
                     .OrderBy(p => p.Index)
