@@ -157,8 +157,8 @@ namespace WordExtractor
                         if (inFloat.StartsWith("listing", StringComparison.InvariantCultureIgnoreCase)) {
                             InVerbatim = true;
                             target.Write("\r\n");
-                        } else if (inFloat.StartsWith("equation", StringComparison.InvariantCultureIgnoreCase)) { } else {
-                            target.Write("\r\n\r\n");
+                        } else if (!inFloat.StartsWith("equation", StringComparison.InvariantCultureIgnoreCase)) {
+                            target.Write("\r\n");
                         }
                         nextFloat = null;
                     } else if (InVerbatim) {
@@ -240,6 +240,8 @@ namespace WordExtractor
             { "ref", text => new Token("\\cref{" + text.Trim('_', ' ', '.') + "}") },
             { "Ref", text => new Token("\\Cref{" + text.Trim('_', ' ', '.') + "}") },
             { "ref_number", text => new Token("\\ref{" + text.Trim('_', ' ', '.') + "}") },
+            { "pageref", text => new Token("page \\pageref{" + text.Trim('_', ' ', '.') + "}") },
+            { "Pageref", text => new Token("Page \\pageref{" + text.Trim('_', ' ', '.') + "}") },
             { "label", text => new Token("label", text.Trim('_', ' ', '.')) },
             
             { "pagebreak", _ => new Token("\\pagebreak\r\n") },
@@ -274,7 +276,7 @@ namespace WordExtractor
             { "end_table_col", _ => new Token(" & ") },
             { "end_table_row", _ => new Token(" \\\\ \\hline\r\n") },
 
-            { "image", text => new Token("\\includegraphics{" + (text ?? "") + "}") },
+            { "image", text => new Token("\\includegraphics{" + (text ?? "") + "}\r\n") },
 
             { "bibliography", _ => new Token("\\bibliography{bibliography}\r\n") }
         };
@@ -357,7 +359,7 @@ namespace WordExtractor
         private static Token ConvertFloat(string text) {
             if (text.IndexOf("listing", StringComparison.InvariantCultureIgnoreCase) == 0) {
                 var language = text.Substring(text.IndexOf('_') + 1).ToLower();
-                return new Token("float_listing", "\\wxbeginlisting{" + language + "}{}{");
+                return new Token("float_listing", "\\wxbeginlisting{" + language + "}{}\r\n{");
             } else {
                 return new Token("float_" + text, "\\wxbegin" + text + "{");
             }

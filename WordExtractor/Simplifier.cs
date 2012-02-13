@@ -362,7 +362,7 @@ namespace WordExtractor
         }
 
         private void ConvertImages() {
-            foreach (var c in Find("S<:drawing !S>:drawing S<:docPr !S>:docPr Sa:title | S=:* ! S>:drawing")) {
+            foreach (var c in Find("S<:p !S>:p S<:drawing !S>:drawing S<:docPr !S>:docPr Sa:title | S=:* ! S>:p")) {
                 c.Start.Value.Metadata = "image";
                 c.Start.Value.Value = c.Mark.Value.Value;
                 c.Start.Next.RemoveTo(c.End);
@@ -592,7 +592,7 @@ namespace WordExtractor
                     c.Start.Value.Metadata = command.ToLowerInvariant();
                     c.Start.Value.Value = options.Trim(' ', '"', '\'');
                     c.Start.Next.RemoveTo(c.End);
-                } else if (command == "REF") {
+                } else if (command == "REF" || command == "PAGEREF") {
                     if (IgnoredBookmarks.Contains(firstOption)) {
                         while (c.Start.Next != null && c.Start.Next.Value.Metadata != "field_separate") {
                             c.Start.Next.Remove();
@@ -989,7 +989,8 @@ namespace WordExtractor
                 if (!string.IsNullOrWhiteSpace(niceRef))
                     NiceReferenceNames[c.Mark.Value.Value] = niceRef;
 
-                c.List.AddAfter(c.End, new Token("end_float", c.Start.Value.Value));
+                c.End.Value.Metadata = "end_float";
+                c.End.Value.Value = c.Start.Value.Value;
             }
 
             // Floats based on equation
