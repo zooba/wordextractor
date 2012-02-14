@@ -15,6 +15,7 @@ _	\_
 …	\textellipsis{}
 –	\textendash{}
 —	\textemdash{}
+♯	\sharp{}
 0x200B	{}				# Zero-width space
 0x00A0	~				# Non-breaking space
 0x00AD	\-				# Soft hyphen

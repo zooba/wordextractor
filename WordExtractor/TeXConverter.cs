@@ -268,7 +268,7 @@ namespace WordExtractor
             { "item", _ => new Token("\\item ") },
 
             { "math_float", text => new Token(text) },
-            { "math", text => new Token("$" + text + "$") },
+            { "math", ConvertMath },
             { "math_para", ConvertMathPara },
 
             { "table", text => new Token("\\begin{tabulary}{\\columnwidth}{" + text.Trim('|') + "}\r\n") },
@@ -348,12 +348,23 @@ namespace WordExtractor
             return new Token((string)null);
         }
 
+        private static Token ConvertMath(string text) {
+            if (text.EndsWith("\\right")) {
+                text += "{}";
+            }
+            return new Token("$" + text + "$");
+        }
+
         private static Token ConvertMathPara(string text) {
+            var suffix = "$$\r\n\\noindent{}\\wxnobreak";
             if (text.EndsWith(".")) {
                 text = text.Remove(text.Length - 1);
-                return new Token("$$" + text + "$$.");
+                suffix = "$$.";
             }
-            return new Token("$$" + text + "$$\r\n\\noindent{}\\wxnobreak");
+            if (text.EndsWith("\\right")) {
+                text += "{}";
+            }
+            return new Token("$$" + text + suffix);
         }
 
         private static Token ConvertFloat(string text) {
