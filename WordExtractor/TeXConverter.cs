@@ -350,19 +350,20 @@ namespace WordExtractor
 
         private static Token ConvertMath(string text) {
             if (text.EndsWith("\\right")) {
-                text += "{}";
+                text += ".";
             }
             return new Token("$" + text + "$");
         }
 
         private static Token ConvertMathPara(string text) {
             var suffix = "$$\r\n\\noindent{}\\wxnobreak";
-            if (text.EndsWith(".")) {
+            if (text.EndsWith("\\right.")) {
+                // Leave it alone
+            } else if (text.EndsWith(".")) {
                 text = text.Remove(text.Length - 1);
                 suffix = "$$.";
-            }
-            if (text.EndsWith("\\right")) {
-                text += "{}";
+            } else if (text.EndsWith("\\right")) {
+                text += ".";
             }
             return new Token("$$" + text + suffix);
         }

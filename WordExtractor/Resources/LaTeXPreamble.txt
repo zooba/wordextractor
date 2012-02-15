@@ -29,6 +29,7 @@
 \usepackage{tabulary}
 \usepackage{dcolumn}
 \usepackage{xfrac}
+\usepackage{relsize}
 
 %------------------------------------------------------------------------------
 
@@ -126,6 +127,9 @@
 \bibliographystyle{IEEEtran}
 
 %-----------------------------------------------------------------------
+
+\newcommand\textcsharp{\mbox{C\hspace{-.05em}\raisebox{.4ex}{\smaller[2]\bf\sf \#}}}
+\newcommand\textcplusplus{\mbox{C\hspace{-.05em}\raisebox{.4ex}{\smaller[3]\bf ++}}}
 
 \newcommand\wxbeginabstract{\begin{abstract}}
 \newcommand\wxendabstract{\end{abstract}}
