@@ -607,6 +607,28 @@ namespace WordExtractor
                         c.Start.Value.Value = firstOption;
                         c.Start.Next.RemoveTo(c.End);
                     }
+                } else if (command == "XE") {
+                    c.Start.Value.Metadata = "index";
+                    int i1 = options.IndexOf('"') + 1;
+                    int i2 = options.IndexOf('"', i1);
+                    var term = options.Substring(i1, i2 - i1).Replace(':', '!');
+                    if (options.IndexOf("\\t", i2) > 0) {
+                        var seeTermMatch = FindSequence(c.Mark.Next, "\0:* !\0:* field_end:*");
+                        if (seeTermMatch.IsMatch) {
+                            var seeTerm = seeTermMatch.Mark.Value.Value;
+                            if (seeTerm.StartsWith("See")) {
+                                seeTerm = seeTerm.Substring(4);
+                            }
+                            seeTerm = seeTerm.Trim('"', ' ').Replace(':', '!');
+                            term += "|see{" + seeTerm + "}";
+                        }
+                    }
+                    c.Start.Value.Value = term;
+                    c.Start.Next.RemoveTo(c.End);
+                } else if (command == "INDEX") {
+                    c.Start.Value.Metadata = "printindex";
+                    c.Start.Value.Value = null;
+                    c.Start.Next.RemoveTo(c.End);
                 } else {
                     Debug.WriteLine("Unhandled field: " + command);
                 }

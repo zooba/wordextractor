@@ -50,6 +50,7 @@ namespace WordExtractor
             if (AsChapter) {
                 Conversions["document"] = (_ => null);
                 Conversions["bibliography"] = (_ => null);
+                Conversions["printindex"] = (_ => null);
                 Conversions["end"] = (text => text == "document" ? null : new Token("\\end{" + text + "}\r\n"));
             }
 
@@ -255,6 +256,7 @@ namespace WordExtractor
             
             { "citation", text => new Token("\\cite{" + text + "}") },
             { "hyperlink", text => new Token("\\url{" + text + "}") },
+            { "index", text => new Token("\\index{" + text + "}") },
             
             { "footnote", _ => new Token("\\footnote{") },
             { "end_footnote", _ => new Token("}") },
@@ -279,7 +281,8 @@ namespace WordExtractor
 
             { "image", text => new Token("\\includegraphics{" + (text ?? "") + "}\r\n") },
 
-            { "bibliography", _ => new Token("\\bibliography{bibliography}\r\n") }
+            { "bibliography", _ => new Token("\\bibliography{bibliography}\r\n") },
+            { "printindex", _ => new Token("\\printindex\r\n") },
         };
 
         private static string[] IgnoreParagraphStyles = new[] { "BodyText" };

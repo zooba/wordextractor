@@ -33,14 +33,20 @@ namespace WordExtractor
             using (var SourceFile = Package.Open(sourceFile, System.IO.FileMode.Open, FileAccess.Read, FileShare.Read)) {
                 Document = Read(SourceFile.GetPart(DocumentXmlUri));
                 DocumentRels = Read(SourceFile.GetPart(DocumentRelsXmlUri));
-                Footnotes = Read(SourceFile.GetPart(FootnotesXmlUri));
                 try {
+                    Footnotes = Read(SourceFile.GetPart(FootnotesXmlUri));
                     FootnotesRels = Read(SourceFile.GetPart(FootnotesRelsXmlUri));
-                }
-                catch (InvalidOperationException) {
+                } catch (InvalidOperationException) {
+                    if (Footnotes == null) {
+                        Footnotes = new List<Token>();
+                    }
                     FootnotesRels = new List<Token>();
                 }
-                Numbering = Read(SourceFile.GetPart(NumberingXmlUri));
+                try {
+                    Numbering = Read(SourceFile.GetPart(NumberingXmlUri));
+                } catch (InvalidOperationException) {
+                    Numbering = new List<Token>();
+                }
             }
         }
 
