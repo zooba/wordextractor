@@ -154,6 +154,7 @@ namespace WordExtractor
             CombineCitations();
 
             //WrapDottedNames();
+            MarkTableFirstRow();
 
             UpTo = 5;
         }
@@ -875,6 +876,13 @@ namespace WordExtractor
             for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code)) {
                 c.Start.Value.Value = (c.Start.Value.Value ?? "|").ToLowerInvariant() + "L|";
                 c.End.Remove();
+            }
+        }
+
+        private void MarkTableFirstRow() {
+            var code = "table:* !end_table_row_first:* end_table_row:*";
+            foreach (var c in Find(code)) {
+                c.End.Value.Metadata = "end_table_row_first";
             }
         }
 

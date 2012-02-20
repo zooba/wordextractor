@@ -271,10 +271,11 @@ namespace WordExtractor
             { "math", ConvertMath },
             { "math_para", ConvertMathPara },
 
-            { "table", text => new Token("\\begin{tabulary}{\\columnwidth}{" + text.Trim('|') + "}\r\n") },
-            { "end_table", _ => new Token("\\end{tabulary}\r\n") },
+            { "table", text => new Token("\\begin{tabulary}{\\columnwidth}{" + text.Trim('|') + "}\\hline\r\n") },
+            { "end_table", _ => new Token("\\hline\\end{tabulary}\r\n") },
             { "end_table_col", _ => new Token(" & ") },
-            { "end_table_row", _ => new Token(" \\\\ \\hline\r\n") },
+            { "end_table_row_first", _ => new Token(" \\\\ \\wxthickhline \r\n") },
+            { "end_table_row", _ => new Token(" \\\\ \r\n") },
 
             { "image", text => new Token("\\includegraphics{" + (text ?? "") + "}\r\n") },
 

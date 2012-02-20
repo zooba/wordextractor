@@ -53,6 +53,11 @@
   \def\@fs@mid{\hrule height.5pt depth0pt \vspace{2.0pt} \hrule height.5pt depth0pt \kern4pt}%
   \let\@fs@iftopcapt\iftrue%
 }
+
+\newcommand{\wxthickhline}{%
+    \noalign {\ifnum 0=`}\fi \hrule height 1pt
+    \futurelet \reserved@a \@xhline
+}
 \makeatother
 
 \floatstyle{simplerule}
