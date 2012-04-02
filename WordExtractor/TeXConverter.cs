@@ -309,6 +309,10 @@ namespace WordExtractor
                 return new Token("appendix", HeadingCommands[HeadingOffsetLevel]);
             }
 
+            if (text.IndexOf("quote", StringComparison.CurrentCultureIgnoreCase) >= 0) {
+                return new Token("\\wxquote{");
+            }
+
             ParagraphStyleCount -= 1;
             return null;
         }
