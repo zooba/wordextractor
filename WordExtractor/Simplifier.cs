@@ -65,6 +65,7 @@ namespace WordExtractor
 
             RenameInstrTextRuns();
             RemoveDeletedTextRuns();
+            RemoveComments();
 
             RemoveInvisibleText();
             RemoveBibliography();
@@ -290,6 +291,12 @@ namespace WordExtractor
 
         private void RemoveDeletedTextRuns() {
             ReplaceSequence(DocumentTokens.First, "S<:p !S:<r S<:rPr !S>:rPr S<:del ! S>:p", "");
+            ReplaceSequence(DocumentTokens.First, "S<:delText ! S>:delText", "");
+        }
+
+        private void RemoveComments() {
+            ReplaceSequence(DocumentTokens.First, "S<:commentRangeStart ! S>:commentRangeEnd", "");
+            ReplaceSequence(DocumentTokens.First, "S<:commentReference ! S>:commentReference", "");
         }
 
         private void RemoveInvisibleText() {
@@ -585,8 +592,26 @@ namespace WordExtractor
                 command = command.Substring(0, command.IndexOf(' ')).ToUpperInvariant();
                 var firstOption = (options.Contains(' ')) ? (options.Substring(0, options.IndexOf(' '))) : options;
 
-                if (command == "CITATION" || command == "SEQ") {
-                    c.Start.Value.Metadata = command.ToLowerInvariant();
+                if (command == "CITATION") {
+                    c.Start.Value.Metadata = "citation";
+                    c.Start.Value.Value = firstOption;
+                    int i = options.IndexOf("\\p", StringComparison.InvariantCultureIgnoreCase);
+                    if (i >= 0) {
+                        var pageNum = options
+                            .Skip(i + 3)
+                            .TakeWhile(x => !char.IsWhiteSpace(x))
+                            .Aggregate("p.~", (acc, x) => acc + x);
+
+                        if (pageNum.IndexOfAny("-‒—–,".ToCharArray()) > 0) {
+                            pageNum = "p" + pageNum;
+                        }
+
+                        c.Start.Value.Value += ";" + pageNum;
+                    }
+                    c.Start.Next.RemoveTo(c.End);
+                }
+                else if (command == "SEQ") {
+                    c.Start.Value.Metadata = "seq";
                     c.Start.Value.Value = firstOption;
                     c.Start.Next.RemoveTo(c.End);
                 } else if (command == "HYPERLINK") {
@@ -786,8 +811,10 @@ namespace WordExtractor
         private void CombineCitations() {
             var code = "citation:* citation:*";
             for (var c = FindSequence(DocumentTokens.First, code); c.IsMatch; c = FindSequence(c.Start, code)) {
-                c.Start.Value.Value += "," + c.End.Value.Value;
-                c.End.Remove();
+                if (c.Start.Value.Value.IndexOf(';') == -1 && c.End.Value.Value.IndexOf(';') == -1) {
+                    c.Start.Value.Value += "," + c.End.Value.Value;
+                    c.End.Remove();
+                }
             }
         }
 
@@ -842,7 +869,7 @@ namespace WordExtractor
                 if (text.EndsWith(@"\right\")) text = text.Substring(0, text.Length - 1) + ".";
 
                 text = text
-                    .Replace("}^{\\text{'}}", "'}")
+                    //.Replace("}^{\\text{'}}", "'}")
                     .Replace("\\text{'}", "'");
 
                 c.Mark.Value.Metadata = "math";

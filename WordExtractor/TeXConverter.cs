@@ -254,7 +254,7 @@ namespace WordExtractor
             { "run_style", ConvertRunStyle },
             { "end_run_style", ConvertEndRunStyle },
             
-            { "citation", text => new Token("\\cite{" + text + "}") },
+            { "citation", ConvertCitation },
             { "hyperlink", text => new Token("\\url{" + text + "}") },
             { "index", text => new Token("\\index{" + text + "}") },
             
@@ -321,6 +321,15 @@ namespace WordExtractor
             var nl = InVerbatim ? "\r\n" : "\r\n\r\n";
             if (ParagraphStyleCount > 0) { ParagraphStyleCount -= 1; return new Token("}" + nl); }
             return new Token(nl);
+        }
+
+        private static Token ConvertCitation(string text) {
+            int i = text.IndexOf(';');
+            if (i > 0) {
+                return new Token("\\cite[" + text.Substring(i + 1) + "]{" + text.Substring(0, i) + "}");
+            } else {
+                return new Token("\\cite{" + text + "}");
+            }
         }
 
         private static Token ConvertRunStyle(string text) {
