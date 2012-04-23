@@ -841,6 +841,10 @@ namespace WordExtractor
                 var text = result2.ToString().Trim('$', ' ');
                 if (text.EndsWith(@"\right\")) text = text.Substring(0, text.Length - 1) + ".";
 
+                text = text
+                    .Replace("}^{\\text{'}}", "'}")
+                    .Replace("\\text{'}", "'");
+
                 c.Mark.Value.Metadata = "math";
                 c.Mark.Value.Value = text;
             }
